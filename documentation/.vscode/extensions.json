@@ -1,0 +1,14 @@
+{
+	"recommendations": [
+		"dbaeumer.vscode-eslint",
+		"streetsidesoftware.code-spell-checker",
+    "alexkrechik.cucumberautocomplete",
+    "EditorConfig.EditorConfig",
+    "ms-vsliveshare.vsliveshare",
+    "yzhang.markdown-all-in-one",
+    "jebbs.plantuml",
+    "systemticks.c4-dsl-extension",
+    "Gruntfuggly.todo-tree",
+    "DavidAnson.vscode-markdownlint"
+	]
+}

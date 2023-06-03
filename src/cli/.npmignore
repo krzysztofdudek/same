@@ -1,0 +1,10 @@
+dist-tests/
+tests/
+src/
+node_modules/
+package-lock.json
+tsconfig.json
+tsconfig-build.json
+tsconfig-build-dev.json
+tsconfig-build-tests.json
+.eslintrc.json
