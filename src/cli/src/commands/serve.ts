@@ -11,6 +11,9 @@ import { StructurizrTransformation } from "../transformation/structurizr.js";
 import { MarkdownTransformation } from "../transformation/markdown.js";
 import { ManifestFile } from "../core/manifest-file.js";
 import { createDirectoryIfNotExists } from "../core/file-system.js";
+import { Itself } from "../tools/itself.js";
+import { Java } from "../tools/java.js";
+import { Graphviz } from "../tools/graphviz.js";
 
 export interface Options {
     hostName: string;
@@ -30,6 +33,10 @@ let structurizrTool: Structurizr.Tool;
 let plantUmlServer: PlantUml.Server;
 
 export async function exec(options: Options) {
+    await Itself.check();
+    await Java.check();
+    await Graphviz.check();
+
     console.log(chalk.greenBright('Started serving.'));
 
     manifestFile = new ManifestFile(options.workingDirectoryPath);
@@ -117,6 +124,10 @@ function runHotReload(options: Options) {
                 return;
             }
 
+            filePath = path.resolve(filePath)?.replaceAll(/\\/g, '/');
+
+            console.log(`Detected file change: ${filePath}`);
+
             changedFiles.push(filePath);
         }
     });
@@ -124,15 +135,19 @@ function runHotReload(options: Options) {
     new Promise(async () => {
         while (true) {
             if (changedFiles.length !== 0) {
-                const file = changedFiles.pop();
+                const filePath = changedFiles.pop();
 
-                if (file === undefined) {
+                if (filePath === undefined) {
                     continue;
                 }
 
                 try {
-                    if (path.extname(file) === '.dsl') {
-                        StructurizrTransformation.transformSingleFile(file, options, structurizrTool);
+                    if (path.extname(filePath) === '.dsl') {
+                        await StructurizrTransformation.transformSingleFile(filePath, {
+                            outputDirectoryPath: options.outputDirectoryPath,
+                            toolsDirectoryPath: options.toolsDirectoryPath,
+                            workingDirectoryPath: options.sourceDirectoryPath
+                        }, structurizrTool);
                     }
 
                     await MarkdownTransformation.transformAllFiles({
