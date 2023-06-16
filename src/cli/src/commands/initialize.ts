@@ -112,7 +112,6 @@ async function createVsCodeExtensions(workingDirectoryPath: string) {
     const content =
 `{
   "recommendations": [
-    "dbaeumer.vscode-eslint",
     "streetsidesoftware.code-spell-checker",
     "alexkrechik.cucumberautocomplete",
     "EditorConfig.EditorConfig",
