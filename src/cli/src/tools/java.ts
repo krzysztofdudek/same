@@ -3,11 +3,11 @@ import { setTimeout } from 'timers/promises';
 
 export namespace Java {
     export async function check() {
-        const java = spawn('java', [ '-version' ]);
+        const checkProcess = spawn('java', [ '-version' ]);
 
         let version: string | null = null;
 
-        java.stderr.on('data', function (data) {
+        checkProcess.stderr.on('data', function (data) {
             const matches = /\d+\.\d+\.\d+/g.exec(data);
 
             if ((matches?.length ?? 0) > 0) {
@@ -15,7 +15,7 @@ export namespace Java {
             }
         });
 
-        java.on('exit', () => {
+        checkProcess.on('exit', () => {
             if (version === null) {
                 version = '0.0.0';
             }

@@ -4,10 +4,11 @@ import downloadFile from "../core/download-file.js";
 import { getLatestRelease } from '../core/github.js';
 import setupTool from '../core/setup-tool.js';
 import decompress from 'decompress';
-import chalk from 'chalk';
 import { ToolBase } from '../core/tool.js';
 import { exec } from "child_process";
 import { setTimeout } from "timers/promises";
+import fsPromises from 'fs/promises';
+import fs from 'fs';
 
 const toolName = "Structurizr";
 const toolFileName = 'structurizr.zip';
@@ -55,6 +56,12 @@ export namespace Structurizr {
         }
 
         async generateDiagrams(filePath: string, outputDirectoryPath: string) {
+            if (fs.existsSync(outputDirectoryPath)) {
+                await fsPromises.rm(outputDirectoryPath, {
+                    recursive: true
+                });
+            }
+
             createDirectoryIfNotExists(outputDirectoryPath);
 
             const jarPath = path.join(this.toolsDirectoryPath, decompressedDirectory, "lib").replaceAll(/\\/g, '/');

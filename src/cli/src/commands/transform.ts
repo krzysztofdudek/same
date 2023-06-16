@@ -6,6 +6,9 @@ import { StructurizrTransformation } from "../transformation/structurizr.js";
 import { MarkdownTransformation } from "../transformation/markdown.js";
 import { ManifestFile } from "../core/manifest-file.js";
 import { createDirectoryIfNotExists } from "../core/file-system.js";
+import { Itself } from "../tools/itself.js";
+import { Java } from "../tools/java.js";
+import { Graphviz } from "../tools/graphviz.js";
 
 export interface Options {
     hostName: string;
@@ -19,6 +22,10 @@ export interface Options {
 }
 
 export async function exec(options: Options) {
+    await Itself.check();
+    await Java.check();
+    await Graphviz.check();
+
     console.log(chalk.greenBright('Started transformation.'));
 
     const manifestFile = new ManifestFile(options.workingDirectoryPath);
