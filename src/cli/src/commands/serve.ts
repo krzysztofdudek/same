@@ -104,7 +104,7 @@ function runDocumentationServer(options: Options) {
 }
 
 function runHotReload(options: Options) {
-    const changedFiles: string[] = [];
+    const changedFiles: { filePath: string, date: number }[] = [];
 
     fs.watch(path.join(options.sourceDirectoryPath), {
         recursive: true
@@ -115,51 +115,55 @@ function runHotReload(options: Options) {
 
         if (eventType === 'change') {
             let filePath = path.join(options.sourceDirectoryPath, fileName);
-
-            if (path.extname(filePath) !== '.dsl') {
-                filePath = "any";
-            }
-
-            if (changedFiles.find(x => x === filePath)) {
-                return;
-            }
-
             filePath = path.resolve(filePath)?.replaceAll(/\\/g, '/');
 
-            console.log(`Detected file change: ${filePath}`);
+            const changedFile = changedFiles.find(x => x.filePath === filePath);
 
-            changedFiles.push(filePath);
+            if (changedFile === undefined) {
+                changedFiles.push({ filePath: filePath, date: Date.now() });
+            } else if (changedFile.date === 0) {
+                changedFile.date = Date.now();
+            }
         }
     });
 
     new Promise(async () => {
-        while (true) {
-            if (changedFiles.length !== 0) {
-                const filePath = changedFiles.pop();
+        const markdownOptions: MarkdownTransformation.Options = {
+            hostName: options.hostName,
+            hostPort: options.hostPort,
+            hostProtocol: options.hostProtocol,
+            workingDirectoryPath: options.sourceDirectoryPath,
+            toolsDirectoryPath: options.toolsDirectoryPath,
+            outputDirectoryPath: options.outputDirectoryPath,
+            plantUmlToSvg: function (content: string) { return plantUmlServer.getSvg(content) },
+            name: manifestFile.name
+        };
 
-                if (filePath === undefined) {
-                    continue;
-                }
+        while (true) {
+            const changedFile = changedFiles.find(x => x.date !== 0 && (x.date + 1000 * 5) < Date.now());
+
+            if (changedFile) {
+                changedFile.date = 0;
 
                 try {
-                    if (path.extname(filePath) === '.dsl') {
-                        await StructurizrTransformation.transformSingleFile(filePath, {
+                    const extension = path.extname(changedFile.filePath);
+
+                    if (extension === '.dsl') {
+                        await StructurizrTransformation.transformSingleFile(changedFile.filePath, {
                             outputDirectoryPath: options.outputDirectoryPath,
                             toolsDirectoryPath: options.toolsDirectoryPath,
                             workingDirectoryPath: options.sourceDirectoryPath
                         }, structurizrTool);
+
+                        await MarkdownTransformation.transformAllFilesRelatedToSpecified(changedFile.filePath, markdownOptions);
+                    } else if ( extension === '.md') {
+                        await MarkdownTransformation.transformSingleFile(changedFile.filePath, markdownOptions)
+
+                        await MarkdownTransformation.transformAllFilesRelatedToSpecified(changedFile.filePath, markdownOptions);
+                    } else {
+                        await MarkdownTransformation.transformAllFilesRelatedToSpecified(changedFile.filePath, markdownOptions);
                     }
 
-                    await MarkdownTransformation.transformAllFiles({
-                        hostName: options.hostName,
-                        hostPort: options.hostPort,
-                        hostProtocol: options.hostProtocol,
-                        workingDirectoryPath: options.sourceDirectoryPath,
-                        toolsDirectoryPath: options.toolsDirectoryPath,
-                        outputDirectoryPath: options.outputDirectoryPath,
-                        plantUmlToSvg: function (content) { return plantUmlServer.getSvg(content) },
-                        name: manifestFile.name
-                    });
                 } catch (error) {
                     console.log(error);
                 }
@@ -167,7 +171,7 @@ function runHotReload(options: Options) {
                 enforceReload();
             }
 
-            await setTimeout(5000);
+            await setTimeout(100);
         }
     });
 }

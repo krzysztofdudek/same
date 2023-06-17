@@ -3,6 +3,43 @@ import { createDirectoryIfNotExists, iterateOverFilesInDirectory } from "../core
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import MarkdownIt from 'markdown-it';
+import chalk from "chalk";
+
+const filesRelations: { [key: string]: string[] } = {};
+
+function clearPath(sourcePath: string): string {
+    return path.resolve(sourcePath).replaceAll(/\\/g, '/');
+}
+
+function addRelation(parentPath: string, childPath: string) {
+    parentPath = clearPath(parentPath);
+    childPath = clearPath(childPath);
+
+    filesRelations[parentPath] = !filesRelations[parentPath] ? [ childPath ] : filesRelations[parentPath].concat([ childPath ]);
+}
+
+function isRelated(parentPath: string, childPath: string): boolean {
+    parentPath = clearPath(parentPath);
+    childPath = clearPath(childPath);
+
+    const children = filesRelations[parentPath];
+
+    if (children === undefined) {
+        return false;
+    } else if (children.find(x => x === childPath)) {
+        return true;
+    } else {
+        for (let i = 0; i < children.length; i++) {
+            const child = children[i];
+
+            if (isRelated(child, childPath)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
 
 export namespace MarkdownTransformation {
     export interface Options {
@@ -17,13 +54,19 @@ export namespace MarkdownTransformation {
     }
 
     export async function transformAllFiles(options: Options) {
-        console.debug('Transforming Markdown files.');
-
         await iterateOverFilesInDirectory(options.workingDirectoryPath, ['md'], async filePath => {
             await transformSingleFile(filePath, options);
         });
+    }
 
-        console.debug('Markdown files transformed.');
+    export async function transformAllFilesRelatedToSpecified(parentFilePath: string, options: Options) {
+        await iterateOverFilesInDirectory(options.workingDirectoryPath, ['md'], async childFilePath => {
+            if (!isRelated(parentFilePath, childFilePath)) {
+                return;
+            }
+
+            await transformSingleFile(childFilePath, options);
+        });
     }
 
     export async function transformSingleFile(filePath: string, options: Options) {
@@ -123,9 +166,9 @@ async function importGherkinFiles(filePath: string, fileContent: string, options
         const wholeMatch = value[0];
         const isAbsolutePath = value[1] === '@';
         const fileName = value[2];
-        const plantUmlFilePath = isAbsolutePath ? fileName : path.resolve(`${path.dirname(filePath)}/${fileName}`);
+        const gherkinFilePath = isAbsolutePath ? fileName : path.resolve(`${path.dirname(filePath)}/${fileName}`);
 
-        const fileContent = await fsPromises.readFile(plantUmlFilePath, { encoding: 'utf-8' });
+        const fileContent = await fsPromises.readFile(gherkinFilePath, { encoding: 'utf-8' });
 
         const replacement =
 `\`\`\`gherkin
@@ -133,6 +176,8 @@ ${fileContent}
 \`\`\``;
 
         result = result.replace(wholeMatch, replacement);
+
+        addRelation(path.resolve(gherkinFilePath), filePath);
     }
 
     return result;
@@ -161,6 +206,8 @@ async function importPlantUmlFiles(filePath: string, fileContent: string, option
         const svg = await options.plantUmlToSvg(fileContent);
 
         result = result.replace(wholeMatch, svg);
+
+        addRelation(path.resolve(plantUmlFilePath), filePath);
     }
 
     return result;
@@ -186,6 +233,8 @@ async function importMarkdownFiles(filePath: string, fileContent: string, option
         let fileContent = await processMarkdownFile(markdownFilePath, options);
 
         result = result.replace(wholeMatch, fileContent);
+
+        addRelation(path.resolve(markdownFilePath), filePath);
     }
 
     return result;
@@ -218,9 +267,12 @@ async function importStructurizrFiles(filePath: string, fileContent: string, opt
         const extension = path.extname(structurizrFile);
         const fileName = structurizrFile.substring(0, structurizrFile.length - extension.length);
         const directory = `${path.dirname(filePath).replace(options.workingDirectoryPath, '')}/${fileName}`.substring(1).replaceAll(/\\/g, '/');
+        const structurizrFilePath = `${path.dirname(filePath).replace(options.workingDirectoryPath, '')}/${structurizrFile}`;
         const replacement = `!!!plantuml(@${options.outputDirectoryPath}/diagrams/${directory}/structurizr-${viewType}-${pad(viewNumber, 3)}.puml)!!!`;
 
         result = result.replace(wholeMatch, replacement);
+
+        addRelation(path.resolve(structurizrFilePath), filePath);
     }
 
     return result;
