@@ -19,13 +19,11 @@ export namespace PlantUml {
         return tool;
     }
 
-    export class Tool extends ToolBase {
+    export class Tool implements ToolBase {
         private jarPath: string;
         private toolsDirectoryPath: string;
 
         public constructor(toolsDirectoryPath: string) {
-            super();
-
             this.jarPath = path.join(toolsDirectoryPath, toolFileName);
             this.toolsDirectoryPath = toolsDirectoryPath;
         }

@@ -1,3 +1,3 @@
-export abstract class ToolBase {
-    abstract configure(): Promise<void>;
+export interface ToolBase {
+    configure(): Promise<void>;
 }

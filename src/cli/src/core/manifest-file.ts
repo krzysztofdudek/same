@@ -2,9 +2,52 @@ import path from 'path';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import { createDirectoryIfNotExists } from './file-system.js';
+import { IFileSystem } from '../infrastructure/abstraction/file-system.js';
+
+const fileName: string = 'manifest.json';
+
+export interface Options {
+    workingDirectory: string;
+}
+
+export class Manifest {
+    public name: string = '';
+}
+
+export interface IManifestRepository {
+    load(): Promise<Manifest>;
+    save(manifest: Manifest): Promise<void>;
+}
+
+export class ManifestRepository implements IManifestRepository {
+    private fileSystem: IFileSystem;
+    private options: Options;
+
+    public constructor(fileSystem: IFileSystem, options: Options) {
+        this.fileSystem = fileSystem;
+        this.options = options;
+    }
+
+    async load(): Promise<Manifest> {
+        const filePath = this.getAbsoluteFilePath();
+
+        if (await this.fileSystem.checkIfExists(filePath)) {
+
+        }
+    }
+
+    save(manifest: Manifest): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
+
+    getAbsoluteFilePath(): string {
+        return path.resolve(`${this.options.workingDirectory}/${fileName}`);
+    }
+}
 
 export class ManifestFile {
     private filePath: string;
+
     public name: string = '';
 
     public constructor(directoryPath: string) {

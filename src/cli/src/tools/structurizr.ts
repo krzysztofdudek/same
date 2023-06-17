@@ -23,12 +23,10 @@ export namespace Structurizr {
         return tool;
     }
 
-    export class Tool extends ToolBase {
+    export class Tool implements ToolBase {
         private toolsDirectoryPath: string;
 
         public constructor(toolsDirectory: string) {
-            super();
-
             this.toolsDirectoryPath = toolsDirectory;
         }
 

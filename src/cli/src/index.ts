@@ -12,6 +12,7 @@ import { exec as execTransform } from './commands/transform.js';
 import { exec as execServe } from './commands/serve.js';
 import { exit } from 'process';
 import path from 'path';
+import absoluteUnixPath from './core/absoluteUnixPath.js';
 
 export const version = '1.0.0-alpha.6';
 
@@ -33,9 +34,9 @@ program.command('initialize')
 
         execInitialize({
             name: args.name,
-            workingDirectoryPath: workingDirectory.replaceAll(/\\/g, '/'),
-            sourceDirectoryPath: path.join(workingDirectory, args.sourceDirectory).replaceAll(/\\/g, '/'),
-            toolsDirectoryPath: path.join(workingDirectory, args.toolsDirectory).replaceAll(/\\/g, '/'),
+            workingDirectoryPath: absoluteUnixPath(workingDirectory),
+            sourceDirectoryPath: absoluteUnixPath(workingDirectory, args.sourceDirectory),
+            toolsDirectoryPath: absoluteUnixPath(workingDirectory, args.toolsDirectory),
         })
             .catch(error => {
                 console.log(error);
@@ -63,10 +64,10 @@ program.command('transform')
             hostPort: args.hostPort,
             hostProtocol: args.hostProtocol,
             plantUmlServerPort: Number(args.plantUmlServerPort),
-            workingDirectoryPath: workingDirectory.replaceAll(/\\/g, '/'),
-            sourceDirectoryPath: path.join(workingDirectory, args.sourceDirectory).replaceAll(/\\/g, '/'),
-            toolsDirectoryPath: path.join(workingDirectory, args.toolsDirectory).replaceAll(/\\/g, '/'),
-            outputDirectoryPath: path.join(workingDirectory, args.outputDirectory).replaceAll(/\\/g, '/')
+            workingDirectoryPath: absoluteUnixPath(workingDirectory),
+            sourceDirectoryPath: absoluteUnixPath(workingDirectory, args.sourceDirectory),
+            toolsDirectoryPath: absoluteUnixPath(workingDirectory, args.toolsDirectory),
+            outputDirectoryPath: absoluteUnixPath(workingDirectory, args.outputDirectory)
         })
             .catch(error => {
                 console.log(error);
@@ -94,10 +95,10 @@ program.command('serve')
             hostPort: args.hostPort,
             hostProtocol: args.hostProtocol,
             plantUmlServerPort: Number(args.plantUmlServerPort),
-            workingDirectoryPath: workingDirectory.replaceAll(/\\/g, '/'),
-            sourceDirectoryPath: path.join(workingDirectory, args.sourceDirectory).replaceAll(/\\/g, '/'),
-            toolsDirectoryPath: path.join(workingDirectory, args.toolsDirectory).replaceAll(/\\/g, '/'),
-            outputDirectoryPath: path.join(workingDirectory, args.outputDirectory).replaceAll(/\\/g, '/')
+            workingDirectoryPath: absoluteUnixPath(workingDirectory),
+            sourceDirectoryPath: absoluteUnixPath(workingDirectory, args.sourceDirectory),
+            toolsDirectoryPath: absoluteUnixPath(workingDirectory, args.toolsDirectory),
+            outputDirectoryPath: absoluteUnixPath(workingDirectory, args.outputDirectory)
         })
             .catch(error => {
                 console.log(error);
