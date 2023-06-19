@@ -5,7 +5,6 @@ import fsPromises from 'fs/promises';
 import { Java } from "../tools/java.js";
 import { PlantUml } from "../tools/plant-uml.js";
 import { Structurizr } from "../tools/structurizr.js";
-import { ManifestFile } from "../core/manifest-file.js";
 import { createDirectoryIfNotExists } from "../core/file-system.js";
 import { Graphviz } from "../tools/graphviz.js";
 import { Itself } from "../tools/itself.js";
