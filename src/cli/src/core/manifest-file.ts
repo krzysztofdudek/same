@@ -32,12 +32,18 @@ export class ManifestRepository implements IManifestRepository {
         const filePath = this.getAbsoluteFilePath();
 
         if (await this.fileSystem.checkIfExists(filePath)) {
+            const content = await this.fileSystem.readFile(filePath);
 
+            return (<Manifest> JSON.parse(content));
         }
+
+        throw new Error('Manifest file is not initialized. Please use \"samecli initialize\" command.');
     }
 
     save(manifest: Manifest): Promise<void> {
-        throw new Error('Method not implemented.');
+        const content = JSON.stringify(manifest, undefined, 2);
+
+        await this.fileSystem.
     }
 
     getAbsoluteFilePath(): string {

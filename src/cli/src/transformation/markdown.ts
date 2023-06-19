@@ -3,7 +3,6 @@ import { createDirectoryIfNotExists, iterateOverFilesInDirectory } from "../core
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import MarkdownIt from 'markdown-it';
-import chalk from "chalk";
 
 const filesRelations: { [key: string]: string[] } = {};
 
