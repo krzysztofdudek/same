@@ -13,7 +13,7 @@ import { exec as execServe } from './commands/serve.js';
 import { exit } from 'process';
 import path from 'path';
 
-export const version = '1.0.0-alpha.6';
+export const version = '1.0.0-alpha.7';
 
 console.log(figlet.textSync(`SAME CLI`));
 

@@ -268,7 +268,7 @@ async function importStructurizrFiles(filePath: string, fileContent: string, opt
         const fileName = structurizrFile.substring(0, structurizrFile.length - extension.length);
         const directory = `${path.dirname(filePath).replace(options.workingDirectoryPath, '')}/${fileName}`.substring(1).replaceAll(/\\/g, '/');
         const structurizrFilePath = `${path.dirname(filePath)}/${structurizrFile}`;
-        const replacement = `!!!plantuml(@${options.outputDirectoryPath}/diagrams/${directory}/structurizr-${viewType}-${pad(viewNumber, 3)}.puml)!!!`;
+        const replacement = `!!!plantuml(@${options.outputDirectoryPath}/diagrams/${directory}/structurizr-${viewType}${viewNumber == 0 ? '' : `-${pad(viewNumber, 3)}`}.puml)!!!`;
 
         result = result.replace(wholeMatch, replacement);
 
