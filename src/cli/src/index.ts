@@ -14,7 +14,7 @@ import { exit } from 'process';
 import path from 'path';
 import absoluteUnixPath from './core/absoluteUnixPath.js';
 
-export const version = '1.0.0-alpha.6';
+export const version = '1.0.0-alpha.7';
 
 console.log(figlet.textSync(`SAME CLI`));
 
