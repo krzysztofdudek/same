@@ -9,7 +9,7 @@ import { setTimeout } from "timers/promises";
 import { Assets } from "../transformation/assets.js";
 import { StructurizrTransformation } from "../transformation/structurizr.js";
 import { MarkdownTransformation } from "../transformation/markdown.js";
-import { ManifestFile } from "../core/manifest-file.js";
+import { ManifestFile } from "../core/manifest.js";
 import { createDirectoryIfNotExists } from "../core/file-system.js";
 import { Itself } from "../tools/itself.js";
 import { Java } from "../tools/java.js";

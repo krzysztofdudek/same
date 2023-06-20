@@ -1,4 +1,3 @@
-
 export interface IFileSystem {
     checkIfExists(path: string): Promise<boolean>;
     createOrOverwriteFile(path: string, content: string): Promise<void>;

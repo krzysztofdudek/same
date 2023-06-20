@@ -1,23 +1,20 @@
-import chalk from 'chalk';
-import { exec } from 'child_process';
-import { setTimeout } from 'timers/promises';
+import { ConfigurationError, ITool } from '../core/tool.js';
+import { IShell } from '../infrastructure/abstraction/shell.js';
 
-export namespace Graphviz {
-    export async function check() {
-        if (process.platform === 'win32') {
+export class Graphviz implements ITool {
+    public constructor(
+        private shell: IShell
+        ) {}
+
+    async configure(): Promise<void | ConfigurationError> {
+        if (this.shell.isWindows()) {
             return;
         }
 
-        const dotProcess = exec('dot --version');
+        const result = await this.shell.executeCommand('dot --version');
 
-        while (dotProcess.exitCode === null) {
-            await setTimeout(100);
-        }
-
-        if (dotProcess.exitCode !== 0) {
-            console.log(chalk.redBright('Install Graphviz from: https://graphviz.org/download/'));
-
-            throw new Error('Graphviz installation is invalid.');
+        if (result.statusCode !== 0) {
+            return new ConfigurationError('Install Graphviz from: https://graphviz.org/download/');
         }
     }
 }

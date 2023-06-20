@@ -5,9 +5,11 @@ import fsPromises from 'fs/promises';
 import { Java } from "../tools/java.js";
 import { PlantUml } from "../tools/plant-uml.js";
 import { Structurizr } from "../tools/structurizr.js";
-import { createDirectoryIfNotExists } from "../core/file-system.js";
+import { createDirectoryIfNotExists } from "../infrastructure/old/file-system.js";
 import { Graphviz } from "../tools/graphviz.js";
 import { Itself } from "../tools/itself.js";
+import { Bootstrapper } from "../bootstrapper.js";
+import { Manifest } from "../core/manifest.js";
 
 export interface Options {
     name: string;
@@ -39,14 +41,19 @@ export async function exec(options: Options) {
 }
 
 async function setupManifestFile(workingDirectoryPath: string, name: string) {
-    const manifest = new ManifestFile(workingDirectoryPath);
+    const repository = Bootstrapper.manifestRepository({
+        workingDirectory: workingDirectoryPath
+    });
 
-    if (manifest.isSaved()) {
-        await manifest.load()
+    let manifest: Manifest.Manifest;
+
+    if (await repository.checkIfExists()) {
+        manifest = (<Manifest.Manifest> await repository.load());
     } else {
+        manifest = Manifest.Manifest.empty();
         manifest.name = name;
 
-        await manifest.save();
+        await repository.save(manifest);
     }
 }
 

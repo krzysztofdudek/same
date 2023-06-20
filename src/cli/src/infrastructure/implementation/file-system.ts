@@ -2,7 +2,6 @@ import fs from 'fs';
 import fsPromises from 'fs/promises';
 import { IFileSystem } from '../abstraction/file-system';
 
-
 export class FileSystem implements IFileSystem {
     async delete(path: string): Promise<void> {
         fs.rmSync(path, {
