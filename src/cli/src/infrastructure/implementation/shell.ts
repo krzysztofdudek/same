@@ -1,12 +1,26 @@
-import { exec } from "child_process";
+import { ChildProcess, exec } from "child_process";
 import { setTimeout } from "timers/promises";
-import { ICommandExecutionResult, IShell } from "../abstraction/shell";
+import { ICommandExecutionResult, IProcess, IShell } from "../abstraction/shell";
+
+export class Process implements IProcess {
+    public constructor(
+        private process: ChildProcess
+    ) {}
+
+    kill(): void {
+        this.process.kill();
+    }
+}
 
 export class Shell implements IShell {
+    runProcess(command: string): IProcess {
+        const childProcess = exec(command);
+
+        return new Process(childProcess);
+    }
     isWindows(): boolean {
         return process.platform === 'win32';
     }
-
     async executeCommand(command: string): Promise<ICommandExecutionResult> {
         let stdoutResult: string = '';
         let stderrResult: string = '';

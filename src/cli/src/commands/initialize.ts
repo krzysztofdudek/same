@@ -19,16 +19,21 @@ export interface Options {
 }
 
 export async function exec(options: Options) {
-    await Itself.check();
-    await Java.check();
-    await Graphviz.check();
+    const manifestOptions = Bootstrapper.manifestOptions();
+    manifestOptions.workingDirectory = options.workingDirectoryPath;
 
-    console.log(chalk.greenBright('Started initialization.'));
+    const toolsOptions = Bootstrapper.toolsOptions();
+    toolsOptions.toolsDirectoryPath = options.toolsDirectoryPath;
 
-    await PlantUml.configure(options.toolsDirectoryPath);
-    await Structurizr.configure(options.toolsDirectoryPath);
+    const toolset = Bootstrapper.toolset();
+    const logger = Bootstrapper.loggerFactory();
 
-    await setupManifestFile(options.workingDirectoryPath, options.name);
+    logger.info('Started initialization.');
+
+    await toolset.configure();
+
+    await setupManifestFile(options.name);
+
     await createVsCodeTasks(options.workingDirectoryPath);
     await createVsCodeExtensions(options.workingDirectoryPath);
     await createVsCodeSettings(options.workingDirectoryPath)
@@ -37,20 +42,18 @@ export async function exec(options: Options) {
     await createGitIgnore(options.workingDirectoryPath);
     await createMarkdownLint(options.workingDirectoryPath);
 
-    console.log(chalk.greenBright('Initialization completed.'));
+    logger.info('Initialization completed.');
 }
 
-async function setupManifestFile(workingDirectoryPath: string, name: string) {
-    const repository = Bootstrapper.manifestRepository({
-        workingDirectory: workingDirectoryPath
-    });
+async function setupManifestFile(name: string) {
+    const repository = Bootstrapper.manifestRepository();
 
-    let manifest: Manifest.Manifest;
+    let manifest: Manifest;
 
     if (await repository.checkIfExists()) {
-        manifest = (<Manifest.Manifest> await repository.load());
+        manifest = (<Manifest> await repository.load());
     } else {
-        manifest = Manifest.Manifest.empty();
+        manifest = Manifest.empty();
         manifest.name = name;
 
         await repository.save(manifest);

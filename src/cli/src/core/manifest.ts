@@ -1,10 +1,9 @@
-import path from 'path';
 import { IFileSystem } from '../infrastructure/abstraction/file-system.js';
 import { ILogger } from '../infrastructure/abstraction/logger.js';
 
 const fileName: string = 'manifest.json';
 
-export interface Options {
+export interface IManifestOptions {
     workingDirectory: string;
 }
 
@@ -53,22 +52,21 @@ export interface IManifestRepository {
 }
 
 export class ManifestRepository implements IManifestRepository {
-    private fileSystem: IFileSystem;
-    private options: Options;
-    private logger: ILogger;
-
-    public constructor(fileSystem: IFileSystem, options: Options, logger: ILogger) {
+    public constructor(
+        private fileSystem: IFileSystem,
+        private options: IManifestOptions,
+        private logger: ILogger) {
         this.fileSystem = fileSystem;
         this.options = options;
         this.logger = logger;
     }
 
     checkIfExists(): Promise<boolean> {
-        return this.fileSystem.checkIfExists(this.getAbsoluteFilePath());
+        return this.fileSystem.checkIfExists(this.getFilePath());
     }
 
     async load(): Promise<Manifest | ManifestCanNotBeLoaded | ManifestIsNotInitialized> {
-        const filePath = this.getAbsoluteFilePath();
+        const filePath = this.getFilePath();
 
         if (await this.fileSystem.checkIfExists(filePath)) {
             let content: string;
@@ -94,12 +92,12 @@ export class ManifestRepository implements IManifestRepository {
     async save(manifest: Manifest): Promise<void> {
         const state = manifest.getState();
         const content = JSON.stringify(state, undefined, 2);
-        const filePath = this.getAbsoluteFilePath();
+        const filePath = this.getFilePath();
 
         await this.fileSystem.createOrOverwriteFile(filePath, content);
     }
 
-    getAbsoluteFilePath(): string {
-        return path.resolve(`${this.options.workingDirectory}/${fileName}`);
+    getFilePath(): string {
+        return this.fileSystem.clearPath(this.options.workingDirectory, fileName);
     }
 }

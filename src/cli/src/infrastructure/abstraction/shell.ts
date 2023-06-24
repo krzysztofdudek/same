@@ -4,7 +4,12 @@ export interface ICommandExecutionResult {
     stderr: string;
 }
 
+export interface IProcess {
+    kill(): void;
+}
+
 export interface IShell {
+    runProcess(command: string): IProcess;
     executeCommand(command: string): Promise<ICommandExecutionResult>;
     isWindows(): boolean;
 }

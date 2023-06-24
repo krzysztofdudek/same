@@ -1,24 +1,36 @@
-import { exec } from "child_process";
-import { setTimeout } from 'timers/promises';
 import { version as itselfVersion } from '../index.js';
-import chalk from "chalk";
+import { IShell } from "../infrastructure/abstraction/shell.js";
+import { ConfigurationError, ITool } from "../core/tool.js";
+import { ILogger, ILoggerFactory } from "../infrastructure/abstraction/logger.js";
+import { IAwaiter } from '../infrastructure/abstraction/awaiter.js';
+import { IServiceProvider } from '../infrastructure/abstraction/service-provider.js';
 
 export namespace Itself {
-    export async function check() {
-        let version: string | null = null;
+    export function register(serviceProvider: IServiceProvider) {
+        serviceProvider.register('graphviz', () => new Tool(
+            serviceProvider.resolve('shell'),
+            serviceProvider.resolve<ILoggerFactory>('loggerFactory').create('Itself'),
+            serviceProvider.resolve('awaiter')));
+    }
 
-        const checkProcess = exec('npm view same-cli version', (_error, stdout, _stderr) => {
-            version = stdout.trim();
-        });
+    export class Tool implements ITool {
+        public constructor(
+            private shell: IShell,
+            private logger: ILogger,
+            private awaiter: IAwaiter
+        ) { }
 
-        while (checkProcess.exitCode === null) {
-            await setTimeout(10);
-        }
+        async configure(): Promise<void | ConfigurationError> {
+            const result = await this.shell.executeCommand('npm view same-cli version');
+            const version = result.stdout;
 
-        if (version != itselfVersion) {
-            console.log(chalk.bgRedBright('Please update this package with \"npm update same-cli\".'));
+            if (version != itselfVersion) {
+                this.logger.warn('Please update this package with \"npm update same-cli\".');
 
-            await setTimeout(3000);
+                await this.awaiter.wait(3000);
+            }
+
+            return
         }
     }
 }

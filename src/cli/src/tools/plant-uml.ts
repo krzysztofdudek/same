@@ -1,64 +1,95 @@
-import path from 'path';
-import downloadFile from "../core/download-file.js";
-import { getLatestRelease } from '../core/github.js';
-import setupTool from '../core/setup-tool.js';
-import { ChildProcess, exec } from 'child_process';
-import { ToolBase } from '../core/tool.js';
+import { IGitHub } from '../core/github.js';
+import { ConfigurationError, ITool, IToolsetVersions } from '../core/tool.js';
 import { encode64, zip_deflate } from '../core/deflate.js'
-import { createDirectoryIfNotExists } from '../core/file-system.js';
+import { IToolsOptions } from './tools-options.js';
+import { IFileSystem } from '../infrastructure/abstraction/file-system.js';
+import { IHttpClient } from '../infrastructure/abstraction/http-client.js';
+import { IProcess, IShell } from '../infrastructure/abstraction/shell.js';
+import { IServiceProvider } from '../infrastructure/abstraction/service-provider.js';
 
 const toolName = 'PlantUml';
 const toolFileName = 'plantuml.jar';
 
 export namespace PlantUml {
-    export async function configure(toolsDirectoryPath: string): Promise<Tool> {
-        const tool = new Tool(toolsDirectoryPath);
+    export function register(serviceProvider: IServiceProvider) {
+        serviceProvider.register('plantUmlOptions', () => <IOptions> {
+            serverPort: 10000
+        });
 
-        await tool.configure();
-
-        return tool;
+        serviceProvider.register('plantUmlTool', () => new Tool(
+            serviceProvider.resolve('toolsOptions'),
+            serviceProvider.resolve('gitHub'),
+            serviceProvider.resolve('fileSystem'),
+            serviceProvider.resolve('toolsetVersions'),
+            serviceProvider.resolve('httpClient'),
+            serviceProvider.resolve('plantUmlOptions'),
+            serviceProvider.resolve('shell')
+        ));
     }
 
-    export class Tool implements ToolBase {
-        private jarPath: string;
-        private toolsDirectoryPath: string;
+    export interface IOptions {
+        serverPort: number;
+    }
 
-        public constructor(toolsDirectoryPath: string) {
-            this.jarPath = path.join(toolsDirectoryPath, toolFileName);
-            this.toolsDirectoryPath = toolsDirectoryPath;
+    export class Tool implements ITool {
+        public constructor(
+            private toolsOptions: IToolsOptions,
+            private gitHub: IGitHub,
+            private fileSystem: IFileSystem,
+            private toolsetVersions: IToolsetVersions,
+            private httpClient: IHttpClient,
+            private options: IOptions,
+            private shell: IShell
+        ) {}
+
+        async configure(): Promise<void | ConfigurationError> {
+            const latestVersionDescriptor = await this.gitHub.getLatestRelease('plantuml', 'plantuml', /plantuml\.jar/);
+
+            await this.fileSystem.createDirectory(this.toolsOptions.toolsDirectoryPath);
+
+            const currentVersion = await this.toolsetVersions.getToolVersion(toolName);
+
+            if (latestVersionDescriptor.name === currentVersion) {
+                return;
+            }
+
+            await this.httpClient.downloadFile(latestVersionDescriptor.url, this.getJarPath());
+
+            await this.toolsetVersions.setToolVersion(toolName, latestVersionDescriptor.name);
         }
 
-        async configure() {
-            const versionDescriptor = await getLatestRelease(toolName, 'plantuml', 'plantuml', /plantuml\.jar/);
-
-            await createDirectoryIfNotExists(this.toolsDirectoryPath);
-
-            await setupTool(this.toolsDirectoryPath, toolName, versionDescriptor.name, async () => {
-                await downloadFile(toolName, versionDescriptor.url, this.jarPath);
-            });
+        public runServer(): IServer {
+            return new Server(this.shell, this.getJarPath(), this.options.serverPort);
         }
 
-        public runServer(port: number): Server {
-            console.debug(`Running PlantUML server on port: ${port}`);
-
-            return new Server(this.jarPath, port);
+        getJarPath(): string {
+            return this.fileSystem.clearPath(this.toolsOptions.toolsDirectoryPath, toolFileName)
         }
     }
 
-    export class Server {
-        private process: ChildProcess;
-        private port: number;
+    export interface IServer {
+        start(): void;
+        stop(): void;
+        getSvg(code: string): Promise<string>;
+    }
 
-        constructor(jarPath: string, port: number) {
-            this.process = exec(`java -jar "${jarPath}" -picoweb:${port}`, );
-            this.port = port;
+    export class Server implements IServer {
+        private process: IProcess | null = null;
+
+        constructor(
+            private shell: IShell,
+            private jarPath: string,
+            private port: number) {}
+
+        start() {
+            this.process = this.shell.runProcess(`java -jar "${this.jarPath}" -picoweb:${this.port}`, );
         }
 
-        public kill() {
-            this.process.kill();
+        stop() {
+            this.process?.kill();
         }
 
-        public async getSvg(code: string): Promise<string> {
+        async getSvg(code: string): Promise<string> {
             const zippedCode = encode64(
                 zip_deflate(
                     unescape(encodeURIComponent(code)),

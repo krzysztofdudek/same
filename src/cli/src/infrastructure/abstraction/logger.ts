@@ -1,3 +1,7 @@
+export interface ILoggerFactory {
+    create(name: string): ILogger;
+}
+
 export interface ILogger {
     trace(message?: any, ...optionalParams: any[]): void;
     debug(message?: any, ...optionalParams: any[]): void;
