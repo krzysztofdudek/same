@@ -5,7 +5,7 @@ import { createHash } from "crypto";
 export namespace Compilation {
     export const iCompilationOptionsServiceKey = "Compilation.ICompilationOptions";
     export const iCompilationContextServiceProvider = "Compilation.ICompilationContext";
-    export const iDependencyFinderServiceKey = "Compilation.IDependencyFinder";
+    export const iFileDependencyIntrospectorServiceKey = "Compilation.IFileDependencyIntrospector";
     export const iFileAnalyzerServiceKey = "Compilation.IFileAnalyzer";
     export const iFileCompilerServiceKey = "Compilation.IFileCompiler";
 
@@ -25,17 +25,17 @@ export namespace Compilation {
                 new CompilationContext(
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
                     serviceProvider.resolve(iCompilationOptionsServiceKey),
-                    serviceProvider.resolveMany(iDependencyFinderServiceKey),
+                    serviceProvider.resolveMany(iFileDependencyIntrospectorServiceKey),
                     serviceProvider.resolveMany(iFileAnalyzerServiceKey)
                 )
         );
     }
 
-    export function registerDependencyFinder(
+    export function registerFileDependencyIntrospector(
         serviceProvider: ServiceProvider.IServiceProvider,
-        factory: () => IDependencyFinder
+        factory: () => IFileDependencyIntrospector
     ) {
-        serviceProvider.registerSingleton(iDependencyFinderServiceKey, factory);
+        serviceProvider.registerSingleton(iFileDependencyIntrospectorServiceKey, factory);
     }
 
     export function registerFileAnalyzer(
@@ -75,16 +75,29 @@ export namespace Compilation {
         compile(filePath: string): Promise<void>;
     }
 
-    export interface IDependencyFinder {
+    export interface IFileDependencyIntrospector {
         fileExtension: string;
 
-        getDependencies(fileContent: string): Promise<string[]>;
+        getDependencies(filePath: string, fileContent: string): Promise<string[]>;
+    }
+
+    export enum AnalysisResultType {
+        Information,
+        Warning,
+        Error,
+    }
+
+    export interface IAnalysisResult {
+        type: AnalysisResultType;
+        line: number;
+        column: number;
+        message: string;
     }
 
     export interface IFileAnalyzer {
         fileExtension: string;
 
-        getAnalysisResults(fileContent: string): Promise<string[]>;
+        getAnalysisResults(fileContent: string): Promise<IAnalysisResult[]>;
     }
 
     interface ICompilationContextFile {
@@ -92,7 +105,7 @@ export namespace Compilation {
         extension: string;
         dependencies: string[];
         hash: string;
-        analysisResults: string[];
+        analysisResults: IAnalysisResult[];
     }
 
     export class CompilationContext implements ICompilationContext {
@@ -106,7 +119,7 @@ export namespace Compilation {
         public constructor(
             private fileSystem: FileSystem.IFileSystem,
             private compilerOptions: ICompilationOptions,
-            private dependencyFinders: IDependencyFinder[],
+            private dependencyFinders: IFileDependencyIntrospector[],
             private fileAnalyzers: IFileAnalyzer[]
         ) {}
 
@@ -139,14 +152,14 @@ export namespace Compilation {
             const dependencyFinders = this.dependencyFinders.filter((x) => x.fileExtension === fileExtension);
             const fileAnalyzers = this.fileAnalyzers.filter((x) => x.fileExtension === fileExtension);
             const dependenciesFilePaths: string[] = [];
-            const analysisResults: string[] = [];
+            const analysisResults: IAnalysisResult[] = [];
 
             const fileContent = await this.fileSystem.readFile(filePath);
 
             for (let j = 0; j < dependencyFinders.length; j++) {
                 const dependencyFinder = dependencyFinders[j];
 
-                dependenciesFilePaths.push(...(await dependencyFinder.getDependencies(fileContent)));
+                dependenciesFilePaths.push(...(await dependencyFinder.getDependencies(filePath, fileContent)));
             }
 
             for (let j = 0; j < fileAnalyzers.length; j++) {
