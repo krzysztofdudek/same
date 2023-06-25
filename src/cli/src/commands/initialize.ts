@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import path from "path";
-import fs from 'fs';
-import fsPromises from 'fs/promises';
+import fs from "fs";
+import fsPromises from "fs/promises";
 import { Java } from "../tools/java.js";
 import { PlantUml } from "../tools/plant-uml.js";
 import { Structurizr } from "../tools/structurizr.js";
@@ -10,6 +10,7 @@ import { Graphviz } from "../tools/graphviz.js";
 import { Itself } from "../tools/itself.js";
 import { Bootstrapper } from "../bootstrapper.js";
 import { Manifest } from "../core/manifest.js";
+import { Toolset } from "../core/toolset.js";
 
 export interface Options {
     name: string;
@@ -19,16 +20,18 @@ export interface Options {
 }
 
 export async function exec(options: Options) {
-    const manifestOptions = Bootstrapper.manifestOptions();
+    const manifestOptions = Bootstrapper.serviceProvider.resolve<Manifest.IManifestOptions>(
+        Manifest.iManifestOptionsServiceKey
+    );
     manifestOptions.workingDirectory = options.workingDirectoryPath;
 
-    const toolsOptions = Bootstrapper.toolsOptions();
+    const toolsOptions = Bootstrapper.serviceProvider.resolve<Toolset.IToolsOptions>(Toolset.iToolsOptionsServiceKey);
     toolsOptions.toolsDirectoryPath = options.toolsDirectoryPath;
 
     const toolset = Bootstrapper.toolset();
     const logger = Bootstrapper.loggerFactory();
 
-    logger.info('Started initialization.');
+    logger.info("Started initialization.");
 
     await toolset.configure();
 
@@ -36,13 +39,13 @@ export async function exec(options: Options) {
 
     await createVsCodeTasks(options.workingDirectoryPath);
     await createVsCodeExtensions(options.workingDirectoryPath);
-    await createVsCodeSettings(options.workingDirectoryPath)
+    await createVsCodeSettings(options.workingDirectoryPath);
     await createEditorConfig(options.workingDirectoryPath);
     await createGitAttributes(options.workingDirectoryPath);
     await createGitIgnore(options.workingDirectoryPath);
     await createMarkdownLint(options.workingDirectoryPath);
 
-    logger.info('Initialization completed.');
+    logger.info("Initialization completed.");
 }
 
 async function setupManifestFile(name: string) {
@@ -51,7 +54,7 @@ async function setupManifestFile(name: string) {
     let manifest: Manifest;
 
     if (await repository.checkIfExists()) {
-        manifest = (<Manifest> await repository.load());
+        manifest = <Manifest>await repository.load();
     } else {
         manifest = Manifest.empty();
         manifest.name = name;
@@ -61,14 +64,13 @@ async function setupManifestFile(name: string) {
 }
 
 async function createVsCodeTasks(workingDirectoryPath: string) {
-    const directoryPath = path.join(workingDirectoryPath, '.vscode');
+    const directoryPath = path.join(workingDirectoryPath, ".vscode");
 
     await createDirectoryIfNotExists(directoryPath);
 
-    const filePath = path.join(directoryPath, 'tasks.json');
+    const filePath = path.join(directoryPath, "tasks.json");
 
-    const content =
-`{
+    const content = `{
   "version": "2.0.0",
   "tasks": [
     {
@@ -84,14 +86,13 @@ async function createVsCodeTasks(workingDirectoryPath: string) {
 }
 
 async function createVsCodeSettings(workingDirectoryPath: string) {
-    const directoryPath = path.join(workingDirectoryPath, '.vscode');
+    const directoryPath = path.join(workingDirectoryPath, ".vscode");
 
     await createDirectoryIfNotExists(directoryPath);
 
-    const filePath = path.join(directoryPath, 'settings.json');
+    const filePath = path.join(directoryPath, "settings.json");
 
-    const content =
-`{
+    const content = `{
   "plantuml.render": "PlantUMLServer",
   "plantuml.server": "http://localhost:65100",
   "markdown.preview.scrollEditorWithPreview": false,
@@ -114,14 +115,13 @@ async function createVsCodeSettings(workingDirectoryPath: string) {
 }
 
 async function createVsCodeExtensions(workingDirectoryPath: string) {
-    const directoryPath = path.join(workingDirectoryPath, '.vscode');
+    const directoryPath = path.join(workingDirectoryPath, ".vscode");
 
     await createDirectoryIfNotExists(directoryPath);
 
-    const filePath = path.join(directoryPath, 'extensions.json');
+    const filePath = path.join(directoryPath, "extensions.json");
 
-    const content =
-`{
+    const content = `{
   "recommendations": [
     "streetsidesoftware.code-spell-checker",
     "alexkrechik.cucumberautocomplete",
@@ -140,10 +140,9 @@ async function createVsCodeExtensions(workingDirectoryPath: string) {
 }
 
 async function createMarkdownLint(workingDirectoryPath: string) {
-    const filePath = path.join(workingDirectoryPath, '.markdownlint.json');
+    const filePath = path.join(workingDirectoryPath, ".markdownlint.json");
 
-    const content =
-`{
+    const content = `{
   "single-trailing-newline": false,
   "no-bare-urls": false,
   "line-length": false,
@@ -158,10 +157,9 @@ async function createMarkdownLint(workingDirectoryPath: string) {
 }
 
 async function createGitIgnore(workingDirectoryPath: string) {
-    const filePath = path.join(workingDirectoryPath, '.gitignore');
+    const filePath = path.join(workingDirectoryPath, ".gitignore");
 
-    const content =
-`_tools
+    const content = `_tools
 _generated
 _temp`;
 
@@ -169,10 +167,9 @@ _temp`;
 }
 
 async function createGitAttributes(workingDirectoryPath: string) {
-    const filePath = path.join(workingDirectoryPath, '.gitattributes');
+    const filePath = path.join(workingDirectoryPath, ".gitattributes");
 
-    const content =
-`*.sh            text eol=lf
+    const content = `*.sh            text eol=lf
 *.ps1           text eol=lf
 *.json          text eol=lf
 *.xml           text eol=lf
@@ -197,10 +194,9 @@ async function createGitAttributes(workingDirectoryPath: string) {
 }
 
 async function createEditorConfig(workingDirectoryPath: string) {
-    const filePath = path.join(workingDirectoryPath, '.editorconfig');
+    const filePath = path.join(workingDirectoryPath, ".editorconfig");
 
-    const content =
-`root = true
+    const content = `root = true
 
 [*]
 charset = utf-8
@@ -223,8 +219,8 @@ async function createFileIfNotExists(filePath: string, content: string) {
     }
 
     await fsPromises.writeFile(filePath, content, {
-        'encoding': 'utf8'
-    })
+        encoding: "utf8",
+    });
 
     console.debug(`Created ${path.basename(filePath)}.`);
 }

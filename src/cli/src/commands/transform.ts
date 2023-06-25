@@ -26,7 +26,7 @@ export async function exec(options: Options) {
     await Java.check();
     await Graphviz.check();
 
-    console.log(chalk.greenBright('Started transformation.'));
+    console.log(chalk.greenBright("Started transformation."));
 
     const manifestFile = new ManifestFile(options.workingDirectoryPath);
     await manifestFile.load();
@@ -43,11 +43,14 @@ export async function exec(options: Options) {
         await Assets.saveJs(options.outputDirectoryPath);
         await Assets.saveCss(options.outputDirectoryPath);
 
-        await StructurizrTransformation.transformAllFiles({
-            workingDirectoryPath: options.sourceDirectoryPath,
-            toolsDirectoryPath: options.toolsDirectoryPath,
-            outputDirectoryPath: options.outputDirectoryPath
-        }, structurizrTool);
+        await StructurizrTransformation.transformAllFiles(
+            {
+                workingDirectoryPath: options.sourceDirectoryPath,
+                toolsDirectoryPath: options.toolsDirectoryPath,
+                outputDirectoryPath: options.outputDirectoryPath,
+            },
+            structurizrTool
+        );
 
         await MarkdownTransformation.transformAllFiles({
             hostName: options.hostName,
@@ -56,8 +59,10 @@ export async function exec(options: Options) {
             workingDirectoryPath: options.sourceDirectoryPath,
             toolsDirectoryPath: options.toolsDirectoryPath,
             outputDirectoryPath: options.outputDirectoryPath,
-            plantUmlToSvg: function (content) { return plantUmlServer!.getSvg(content) },
-            name: manifestFile.name
+            plantUmlToSvg: function (content) {
+                return plantUmlServer!.getSvg(content);
+            },
+            name: manifestFile.name,
         });
     } catch (error) {
         console.log(error);
@@ -65,5 +70,5 @@ export async function exec(options: Options) {
         plantUmlServer?.kill();
     }
 
-    console.log(chalk.greenBright('Transformation completed.'));
+    console.log(chalk.greenBright("Transformation completed."));
 }

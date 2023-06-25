@@ -1,32 +1,40 @@
 {
-	"folders": [
-		{
-			"path": "."
-		}
-	],
-	"settings": {
-		"cSpell.words": [
-			"alexkrechik",
-			"Anson",
-			"Bootstrapper",
-			"ciarant",
-			"copyfiles",
-			"cucumberautocomplete",
-			"dbaeumer",
-			"Dudek",
-			"Graphviz",
-			"Gruntfuggly",
-			"hintrc",
-			"jebbs",
-			"Krzysztof",
-			"picoweb",
-			"Plantuml",
-			"puml",
-			"samecli",
-			"Structurizr",
-			"systemticks",
-			"Toolset",
-			"yzhang"
-		]
-	}
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "cSpell.words": [
+            "alexkrechik",
+            "Anson",
+            "Bootstrapper",
+            "ciarant",
+            "copyfiles",
+            "cucumberautocomplete",
+            "dbaeumer",
+            "Dudek",
+            "Graphviz",
+            "Gruntfuggly",
+            "hintrc",
+            "jebbs",
+            "Krzysztof",
+            "picoweb",
+            "Plantuml",
+            "puml",
+            "samecli",
+            "Structurizr",
+            "systemticks",
+            "Toolset",
+            "yzhang"
+        ],
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "[javascript]": {
+            "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[typescript]": {
+            "editor.defaultFormatter": "esbenp.prettier-vscode"
+        }
+    }
 }

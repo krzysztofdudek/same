@@ -1,20 +1,22 @@
 import path from "path";
 import { createDirectoryIfNotExists, iterateOverFilesInDirectory } from "../core/file-system.js";
-import fs from 'fs';
-import fsPromises from 'fs/promises';
-import MarkdownIt from 'markdown-it';
+import fs from "fs";
+import fsPromises from "fs/promises";
+import MarkdownIt from "markdown-it";
 
 const filesRelations: { [key: string]: string[] } = {};
 
 function clearPath(sourcePath: string): string {
-    return path.resolve(sourcePath).replaceAll(/\\/g, '/');
+    return path.resolve(sourcePath).replaceAll(/\\/g, "/");
 }
 
 function addRelation(parentPath: string, childPath: string) {
     parentPath = clearPath(parentPath);
     childPath = clearPath(childPath);
 
-    filesRelations[parentPath] = !filesRelations[parentPath] ? [ childPath ] : filesRelations[parentPath].concat([ childPath ]);
+    filesRelations[parentPath] = !filesRelations[parentPath]
+        ? [childPath]
+        : filesRelations[parentPath].concat([childPath]);
 }
 
 function isRelated(parentPath: string, childPath: string): boolean {
@@ -25,7 +27,7 @@ function isRelated(parentPath: string, childPath: string): boolean {
 
     if (children === undefined) {
         return false;
-    } else if (children.find(x => x === childPath)) {
+    } else if (children.find((x) => x === childPath)) {
         return true;
     } else {
         for (let i = 0; i < children.length; i++) {
@@ -53,13 +55,13 @@ export namespace MarkdownTransformation {
     }
 
     export async function transformAllFiles(options: Options) {
-        await iterateOverFilesInDirectory(options.workingDirectoryPath, ['md'], async filePath => {
+        await iterateOverFilesInDirectory(options.workingDirectoryPath, ["md"], async (filePath) => {
             await transformSingleFile(filePath, options);
         });
     }
 
     export async function transformAllFilesRelatedToSpecified(parentFilePath: string, options: Options) {
-        await iterateOverFilesInDirectory(options.workingDirectoryPath, ['md'], async childFilePath => {
+        await iterateOverFilesInDirectory(options.workingDirectoryPath, ["md"], async (childFilePath) => {
             if (!isRelated(parentFilePath, childFilePath)) {
                 return;
             }
@@ -71,38 +73,55 @@ export namespace MarkdownTransformation {
     export async function transformSingleFile(filePath: string, options: Options) {
         console.debug(`Transforming: ${filePath}`);
 
-        const outputFilePath = path.join(options.outputDirectoryPath, filePath.replace(options.workingDirectoryPath, '').replace('.md', '.html'));
+        const outputFilePath = path.join(
+            options.outputDirectoryPath,
+            filePath.replace(options.workingDirectoryPath, "").replace(".md", ".html")
+        );
         const outputDirectoryPath = path.dirname(outputFilePath);
 
         await createDirectoryIfNotExists(outputDirectoryPath);
-        await createHtmlFile(filePath, outputFilePath, options)
+        await createHtmlFile(filePath, outputFilePath, options);
 
         console.debug(`Transformed: ${filePath}`);
     }
 }
 
 const md = new MarkdownIt({
-    html: true
+    html: true,
 });
 
-async function createHtmlFile(markdownFilePath: string, outputFilePath: string, options: MarkdownTransformation.Options) {
+async function createHtmlFile(
+    markdownFilePath: string,
+    outputFilePath: string,
+    options: MarkdownTransformation.Options
+) {
     let fileContent = await processMarkdownFile(markdownFilePath, options);
 
     const render = md.render(fileContent);
 
-    fs.writeFileSync(outputFilePath.replace('.html', '.fragment.html'), render, {
-        encoding: 'utf-8'
+    fs.writeFileSync(outputFilePath.replace(".html", ".fragment.html"), render, {
+        encoding: "utf-8",
     });
 
     const extension = path.extname(markdownFilePath);
-    let pathFragments = markdownFilePath.substring(0, markdownFilePath.length - extension.length).replace(options.workingDirectoryPath, '').substring(1).replaceAll(/\\/g, '/').split('/');
+    let pathFragments = markdownFilePath
+        .substring(0, markdownFilePath.length - extension.length)
+        .replace(options.workingDirectoryPath, "")
+        .substring(1)
+        .replaceAll(/\\/g, "/")
+        .split("/");
 
-    if (pathFragments[pathFragments.length - 1] === 'index')
+    if (pathFragments[pathFragments.length - 1] === "index")
         pathFragments = pathFragments.slice(0, pathFragments.length - 1);
 
-    pathFragments = pathFragments.map(x => x.split('-').map(x => x.charAt(0).toUpperCase() + x.slice(1)).join(' '));
+    pathFragments = pathFragments.map((x) =>
+        x
+            .split("-")
+            .map((x) => x.charAt(0).toUpperCase() + x.slice(1))
+            .join(" ")
+    );
 
-    const header = [options.name, ...pathFragments].join(' > ');
+    const header = [options.name, ...pathFragments].join(" > ");
 
     let html = `<html lang="en">
         <head>
@@ -115,18 +134,20 @@ async function createHtmlFile(markdownFilePath: string, outputFilePath: string, 
                     padding: 1em;
                 }
             </style>
-            <script src="${options.hostProtocol}://${options.hostName}:${options.hostPort}/script.js" type="text/javascript"></script>
+            <script src="${options.hostProtocol}://${options.hostName}:${
+        options.hostPort
+    }/script.js" type="text/javascript"></script>
         </head>
         <body class="markdown-body">
-            ${render.indexOf('h1') < 0 ? `<h1>${header}</h1>` : ''}
+            ${render.indexOf("h1") < 0 ? `<h1>${header}</h1>` : ""}
 ${render}
         </body>
     </html>`;
 
-    html = html.replace(/(href=\".+).md\"/mg, "$1.html\"");
+    html = html.replace(/(href=\".+).md\"/gm, '$1.html"');
 
     await fsPromises.writeFile(outputFilePath, html, {
-        encoding: 'utf-8'
+        encoding: "utf-8",
     });
 }
 
@@ -134,7 +155,7 @@ async function breakLines(fileContent: string) {
     const matchesIterator = fileContent.matchAll(/!{3}\s*break-page\s*!{3}/gi);
     let match;
 
-    while (match = matchesIterator.next()) {
+    while ((match = matchesIterator.next())) {
         const value = match.value;
 
         if (value === undefined) {
@@ -155,7 +176,7 @@ async function importGherkinFiles(filePath: string, fileContent: string, options
     const matchesIterator = result.matchAll(/!{3}\s*gherkin\s*\(\s*(@)?(.+)\s*\)\s*!{3}/gi);
     let match;
 
-    while (match = matchesIterator.next()) {
+    while ((match = matchesIterator.next())) {
         const value = match.value;
 
         if (value === undefined) {
@@ -163,14 +184,13 @@ async function importGherkinFiles(filePath: string, fileContent: string, options
         }
 
         const wholeMatch = value[0];
-        const isAbsolutePath = value[1] === '@';
+        const isAbsolutePath = value[1] === "@";
         const fileName = value[2];
         const gherkinFilePath = isAbsolutePath ? fileName : path.resolve(`${path.dirname(filePath)}/${fileName}`);
 
-        const fileContent = await fsPromises.readFile(gherkinFilePath, { encoding: 'utf-8' });
+        const fileContent = await fsPromises.readFile(gherkinFilePath, { encoding: "utf-8" });
 
-        const replacement =
-`\`\`\`gherkin
+        const replacement = `\`\`\`gherkin
 ${fileContent}
 \`\`\``;
 
@@ -188,7 +208,7 @@ async function importPlantUmlFiles(filePath: string, fileContent: string, option
     const matchesIterator = result.matchAll(/!{3}\s*plantuml\s*\(\s*(@)?(.+)\s*\)\s*!{3}/gi);
     let match;
 
-    while (match = matchesIterator.next()) {
+    while ((match = matchesIterator.next())) {
         const value = match.value;
 
         if (value === undefined) {
@@ -196,11 +216,11 @@ async function importPlantUmlFiles(filePath: string, fileContent: string, option
         }
 
         const wholeMatch = value[0];
-        const isAbsolutePath = value[1] === '@';
+        const isAbsolutePath = value[1] === "@";
         const fileName = value[2];
         const plantUmlFilePath = isAbsolutePath ? fileName : path.resolve(`${path.dirname(filePath)}/${fileName}`);
 
-        const fileContent = await fsPromises.readFile(plantUmlFilePath, { encoding: 'utf-8' });
+        const fileContent = await fsPromises.readFile(plantUmlFilePath, { encoding: "utf-8" });
 
         const svg = await options.plantUmlToSvg(fileContent);
 
@@ -218,7 +238,7 @@ async function importMarkdownFiles(filePath: string, fileContent: string, option
     const matchesIterator = result.matchAll(/!{3}\s*markdown\s*\(\s*(.+)\s*\)\s*!{3}/gi);
     let match;
 
-    while (match = matchesIterator.next()) {
+    while ((match = matchesIterator.next())) {
         const value = match.value;
 
         if (value === undefined) {
@@ -251,7 +271,7 @@ async function importStructurizrFiles(filePath: string, fileContent: string, opt
         return num;
     }
 
-    while (match = matchesIterator.next()) {
+    while ((match = matchesIterator.next())) {
         const value = match.value;
 
         if (value === undefined) {
@@ -265,9 +285,13 @@ async function importStructurizrFiles(filePath: string, fileContent: string, opt
 
         const extension = path.extname(structurizrFile);
         const fileName = structurizrFile.substring(0, structurizrFile.length - extension.length);
-        const directory = `${path.dirname(filePath).replace(options.workingDirectoryPath, '')}/${fileName}`.substring(1).replaceAll(/\\/g, '/');
+        const directory = `${path.dirname(filePath).replace(options.workingDirectoryPath, "")}/${fileName}`
+            .substring(1)
+            .replaceAll(/\\/g, "/");
         const structurizrFilePath = `${path.dirname(filePath)}/${structurizrFile}`;
-        const replacement = `!!!plantuml(@${options.outputDirectoryPath}/diagrams/${directory}/structurizr-${viewType}${viewNumber == 0 ? '' : `-${pad(viewNumber, 3)}`}.puml)!!!`;
+        const replacement = `!!!plantuml(@${options.outputDirectoryPath}/diagrams/${directory}/structurizr-${viewType}${
+            viewNumber == 0 ? "" : `-${pad(viewNumber, 3)}`
+        }.puml)!!!`;
 
         result = result.replace(wholeMatch, replacement);
 
@@ -279,7 +303,7 @@ async function importStructurizrFiles(filePath: string, fileContent: string, opt
 
 async function processMarkdownFile(filePath: string, options: MarkdownTransformation.Options) {
     let fileContent = await fsPromises.readFile(filePath, {
-        encoding: 'utf-8'
+        encoding: "utf-8",
     });
 
     fileContent = await importStructurizrFiles(filePath, fileContent, options);

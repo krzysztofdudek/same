@@ -1,58 +1,58 @@
 {
-  "name": "same-cli",
-  "version": "1.0.0-alpha.7",
-  "description": "Software Architecture Modeling Environment CLI",
-  "main": "dist/index.js",
-  "type": "module",
-  "bin": {
-    "samecli": "dist/index.js"
-  },
-  "scripts": {
-    "build": "tsc -p tsconfig-build.json",
-    "build-dev": "tsc -p tsconfig-build-dev.json",
-    "build-tests": "tsc -p tsconfig-build-tests.json",
-    "test": "mocha 'dist-tests/tests/**/*.js' --recursive --timeout 60000 --exit",
-    "watch": "tsc -watch -p tsconfig-build-dev.json"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/krzysztofdudek/same.git"
-  },
-  "keywords": [
-    "software",
-    "architecture",
-    "modeling",
-    "environment",
-    "git",
-    "uml",
-    "c4",
-    "markdown",
-    "text"
-  ],
-  "author": "Krzysztof Dudek",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/krzysztofdudek/same/issues"
-  },
-  "homepage": "https://github.com/krzysztofdudek/same#readme",
-  "dependencies": {
-    "chalk": "^5.2.0",
-    "commander": "^10.0.1",
-    "decompress": "^4.2.1",
-    "express": "^4.18.2",
-    "figlet": "^1.6.0",
-    "markdown-it": "^13.0.1",
-    "ws": "^8.13.0"
-  },
-  "devDependencies": {
-    "@types/decompress": "^4.2.4",
-    "@types/express": "^4.17.17",
-    "@types/figlet": "^1.5.6",
-    "@types/markdown-it": "^12.2.3",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "^20.2.5",
-    "@types/ws": "^8.5.5",
-    "mocha": "^10.2.0",
-    "typescript": "^5.0.4"
-  }
+    "name": "same-cli",
+    "version": "1.0.0-alpha.7",
+    "description": "Software Architecture Modeling Environment CLI",
+    "main": "dist/index.js",
+    "type": "module",
+    "bin": {
+        "samecli": "dist/index.js"
+    },
+    "scripts": {
+        "build": "tsc -p tsconfig-build.json",
+        "build-dev": "tsc -p tsconfig-build-dev.json",
+        "build-tests": "tsc -p tsconfig-build-tests.json",
+        "test": "mocha 'dist-tests/tests/**/*.js' --recursive --timeout 60000 --exit",
+        "watch": "tsc -watch -p tsconfig-build-dev.json"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/krzysztofdudek/same.git"
+    },
+    "keywords": [
+        "software",
+        "architecture",
+        "modeling",
+        "environment",
+        "git",
+        "uml",
+        "c4",
+        "markdown",
+        "text"
+    ],
+    "author": "Krzysztof Dudek",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/krzysztofdudek/same/issues"
+    },
+    "homepage": "https://github.com/krzysztofdudek/same#readme",
+    "dependencies": {
+        "chalk": "^5.2.0",
+        "commander": "^10.0.1",
+        "decompress": "^4.2.1",
+        "express": "^4.18.2",
+        "figlet": "^1.6.0",
+        "markdown-it": "^13.0.1",
+        "ws": "^8.13.0"
+    },
+    "devDependencies": {
+        "@types/decompress": "^4.2.4",
+        "@types/express": "^4.17.17",
+        "@types/figlet": "^1.5.6",
+        "@types/markdown-it": "^12.2.3",
+        "@types/mocha": "^10.0.1",
+        "@types/node": "^20.2.5",
+        "@types/ws": "^8.5.5",
+        "mocha": "^10.2.0",
+        "typescript": "^5.0.4"
+    }
 }

@@ -1,22 +1,26 @@
 import path from "path";
-import fsPromises from 'fs/promises';
+import fsPromises from "fs/promises";
 
 export namespace Assets {
     export async function saveJs(outputDirectoryPath: string) {
-        await fsPromises.writeFile(path.join(outputDirectoryPath, 'script.js'),
+        await fsPromises.writeFile(
+            path.join(outputDirectoryPath, "script.js"),
             `const client = new WebSocket(location.origin.replace('http', 'ws'));
 
 client.addEventListener('message', message => {
     if (message.data === 'refresh') {
         location.reload();
     }
-})`, {
-            encoding: 'utf-8'
-        });
+})`,
+            {
+                encoding: "utf-8",
+            }
+        );
     }
 
     export async function saveCss(outputDirectoryPath: string) {
-        await fsPromises.writeFile(path.join(outputDirectoryPath, 'styles.css'),
+        await fsPromises.writeFile(
+            path.join(outputDirectoryPath, "styles.css"),
             `/* @media (prefers-color-scheme: dark) {
     .markdown-body {
       color-scheme: dark;
@@ -1122,8 +1126,10 @@ client.addEventListener('message', message => {
 
   .markdown-body img {
       background-color: white;
-  }`, {
-            encoding: 'utf-8'
-        });
+  }`,
+            {
+                encoding: "utf-8",
+            }
+        );
     }
 }

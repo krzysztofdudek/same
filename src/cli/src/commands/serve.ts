@@ -1,10 +1,10 @@
 import { PlantUml } from "../tools/plant-uml.js";
 import { Structurizr } from "../tools/structurizr.js";
-import express from 'express';
-import { WebSocketServer } from 'ws';
+import express from "express";
+import { WebSocketServer } from "ws";
 import chalk from "chalk";
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 import { setTimeout } from "timers/promises";
 import { Assets } from "../transformation/assets.js";
 import { StructurizrTransformation } from "../transformation/structurizr.js";
@@ -26,7 +26,7 @@ export interface Options {
     toolsDirectoryPath: string;
 }
 
-let enforceReload = () => { };
+let enforceReload = () => {};
 let manifestFile: ManifestFile;
 let plantUmlTool: PlantUml.Tool;
 let structurizrTool: Structurizr.Tool;
@@ -37,7 +37,7 @@ export async function exec(options: Options) {
     await Java.check();
     await Graphviz.check();
 
-    console.log(chalk.greenBright('Started serving.'));
+    console.log(chalk.greenBright("Started serving."));
 
     manifestFile = new ManifestFile(options.workingDirectoryPath);
     await manifestFile.load();
@@ -53,11 +53,14 @@ export async function exec(options: Options) {
         await Assets.saveJs(options.outputDirectoryPath);
         await Assets.saveCss(options.outputDirectoryPath);
 
-        await StructurizrTransformation.transformAllFiles({
-            workingDirectoryPath: options.sourceDirectoryPath,
-            toolsDirectoryPath: options.toolsDirectoryPath,
-            outputDirectoryPath: options.outputDirectoryPath
-        }, structurizrTool);
+        await StructurizrTransformation.transformAllFiles(
+            {
+                workingDirectoryPath: options.sourceDirectoryPath,
+                toolsDirectoryPath: options.toolsDirectoryPath,
+                outputDirectoryPath: options.outputDirectoryPath,
+            },
+            structurizrTool
+        );
 
         await MarkdownTransformation.transformAllFiles({
             hostName: options.hostName,
@@ -66,8 +69,10 @@ export async function exec(options: Options) {
             workingDirectoryPath: options.sourceDirectoryPath,
             toolsDirectoryPath: options.toolsDirectoryPath,
             outputDirectoryPath: options.outputDirectoryPath,
-            plantUmlToSvg: function (content) { return plantUmlServer.getSvg(content) },
-            name: manifestFile.name
+            plantUmlToSvg: function (content) {
+                return plantUmlServer.getSvg(content);
+            },
+            name: manifestFile.name,
         });
 
         runDocumentationServer(options);
@@ -85,47 +90,53 @@ function runDocumentationServer(options: Options) {
     const wsServer = new WebSocketServer({ noServer: true });
 
     const server = app.listen(options.hostPort, () => {
-        console.log(`Documentation is being served on url: ${options.hostProtocol}://${options.hostName}:${options.hostPort}.`);
+        console.log(
+            `Documentation is being served on url: ${options.hostProtocol}://${options.hostName}:${options.hostPort}.`
+        );
     });
 
-    server.on('upgrade', (request, socket, head) => {
-        wsServer.handleUpgrade(request, socket, head, socket => {
-            wsServer.emit('connection', socket, request);
-        })
+    server.on("upgrade", (request, socket, head) => {
+        wsServer.handleUpgrade(request, socket, head, (socket) => {
+            wsServer.emit("connection", socket, request);
+        });
     });
 
     enforceReload = function () {
-        console.log(chalk.blueBright('Enforcing refresh.'));
+        console.log(chalk.blueBright("Enforcing refresh."));
 
         wsServer.clients.forEach(function each(client) {
-            client.send('refresh');
+            client.send("refresh");
         });
     };
 }
 
 function runHotReload(options: Options) {
-    const changedFiles: { filePath: string, date: number }[] = [];
+    const changedFiles: { filePath: string; date: number }[] = [];
 
-    fs.watch(path.join(options.sourceDirectoryPath), {
-        recursive: true
-    }, (eventType, fileName) => {
-        if (!(typeof fileName === 'string')) {
-            return;
-        }
+    fs.watch(
+        path.join(options.sourceDirectoryPath),
+        {
+            recursive: true,
+        },
+        (eventType, fileName) => {
+            if (!(typeof fileName === "string")) {
+                return;
+            }
 
-        if (eventType === 'change') {
-            let filePath = path.join(options.sourceDirectoryPath, fileName);
-            filePath = path.resolve(filePath)?.replaceAll(/\\/g, '/');
+            if (eventType === "change") {
+                let filePath = path.join(options.sourceDirectoryPath, fileName);
+                filePath = path.resolve(filePath)?.replaceAll(/\\/g, "/");
 
-            const changedFile = changedFiles.find(x => x.filePath === filePath);
+                const changedFile = changedFiles.find((x) => x.filePath === filePath);
 
-            if (changedFile === undefined) {
-                changedFiles.push({ filePath: filePath, date: Date.now() });
-            } else if (changedFile.date === 0) {
-                changedFile.date = Date.now();
+                if (changedFile === undefined) {
+                    changedFiles.push({ filePath: filePath, date: Date.now() });
+                } else if (changedFile.date === 0) {
+                    changedFile.date = Date.now();
+                }
             }
         }
-    });
+    );
 
     new Promise(async () => {
         const markdownOptions: MarkdownTransformation.Options = {
@@ -135,12 +146,14 @@ function runHotReload(options: Options) {
             workingDirectoryPath: options.sourceDirectoryPath,
             toolsDirectoryPath: options.toolsDirectoryPath,
             outputDirectoryPath: options.outputDirectoryPath,
-            plantUmlToSvg: function (content: string) { return plantUmlServer.getSvg(content) },
-            name: manifestFile.name
+            plantUmlToSvg: function (content: string) {
+                return plantUmlServer.getSvg(content);
+            },
+            name: manifestFile.name,
         };
 
         while (true) {
-            const changedFile = changedFiles.find(x => x.date !== 0 && (x.date + 1000 * 5) < Date.now());
+            const changedFile = changedFiles.find((x) => x.date !== 0 && x.date + 1000 * 5 < Date.now());
 
             if (changedFile) {
                 changedFile.date = 0;
@@ -148,22 +161,34 @@ function runHotReload(options: Options) {
                 try {
                     const extension = path.extname(changedFile.filePath);
 
-                    if (extension === '.dsl') {
-                        await StructurizrTransformation.transformSingleFile(changedFile.filePath, {
-                            outputDirectoryPath: options.outputDirectoryPath,
-                            toolsDirectoryPath: options.toolsDirectoryPath,
-                            workingDirectoryPath: options.sourceDirectoryPath
-                        }, structurizrTool);
+                    if (extension === ".dsl") {
+                        await StructurizrTransformation.transformSingleFile(
+                            changedFile.filePath,
+                            {
+                                outputDirectoryPath: options.outputDirectoryPath,
+                                toolsDirectoryPath: options.toolsDirectoryPath,
+                                workingDirectoryPath: options.sourceDirectoryPath,
+                            },
+                            structurizrTool
+                        );
 
-                        await MarkdownTransformation.transformAllFilesRelatedToSpecified(changedFile.filePath, markdownOptions);
-                    } else if ( extension === '.md') {
-                        await MarkdownTransformation.transformSingleFile(changedFile.filePath, markdownOptions)
+                        await MarkdownTransformation.transformAllFilesRelatedToSpecified(
+                            changedFile.filePath,
+                            markdownOptions
+                        );
+                    } else if (extension === ".md") {
+                        await MarkdownTransformation.transformSingleFile(changedFile.filePath, markdownOptions);
 
-                        await MarkdownTransformation.transformAllFilesRelatedToSpecified(changedFile.filePath, markdownOptions);
+                        await MarkdownTransformation.transformAllFilesRelatedToSpecified(
+                            changedFile.filePath,
+                            markdownOptions
+                        );
                     } else {
-                        await MarkdownTransformation.transformAllFilesRelatedToSpecified(changedFile.filePath, markdownOptions);
+                        await MarkdownTransformation.transformAllFilesRelatedToSpecified(
+                            changedFile.filePath,
+                            markdownOptions
+                        );
                     }
-
                 } catch (error) {
                     console.log(error);
                 }

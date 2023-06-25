@@ -5,9 +5,7 @@
         "ecmaVersion": 2022,
         "sourceType": "module"
     },
-    "plugins": [
-        "@typescript-eslint"
-    ],
+    "plugins": ["@typescript-eslint"],
     "rules": {
         "@typescript-eslint/naming-convention": "warn",
         "@typescript-eslint/semi": "warn",
@@ -16,10 +14,5 @@
         "no-throw-literal": "warn",
         "semi": "off"
     },
-    "ignorePatterns": [
-        "out",
-        "dist",
-        "dist-dev",
-        "**/*.d.ts"
-    ]
+    "ignorePatterns": ["out", "dist", "dist-dev", "**/*.d.ts"]
 }

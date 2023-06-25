@@ -1,57 +1,74 @@
-import { HttpResponseError, IHttpClient } from '../infrastructure/abstraction/http-client';
-import { ILogger } from '../infrastructure/abstraction/logger';
+import { HttpClient } from "../infrastructure/http-client";
+import { Logger } from "../infrastructure/logger";
+import { ServiceProvider } from "../infrastructure/service-provider";
 
-class FetchingError { }
+export namespace GitHub {
+    export const iGitHubServiceKey = "GitHub.IGitHub";
 
-class ResponseParsingError { }
+    export function register(serviceProvider: ServiceProvider.IServiceProvider) {
+        serviceProvider.registerSingleton(
+            iGitHubServiceKey,
+            () =>
+                new GitHub(
+                    serviceProvider.resolve(HttpClient.iHttpClientServiceKey),
+                    serviceProvider
+                        .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
+                        .create(iGitHubServiceKey)
+                )
+        );
+    }
 
-interface Release {
-    tag_name: string;
-    assets: Asset[];
-}
+    class FetchingError {}
 
-interface Asset {
-    name: string;
-    browser_download_url: string;
-}
+    class ResponseParsingError {}
 
-interface VersionDescriptor {
-    name: string;
-    asset: string;
-    url: string;
-}
+    interface Release {
+        tag_name: string;
+        assets: Asset[];
+    }
 
-export interface IGitHub {
-    getLatestRelease(owner: string, repository: string, asset: RegExp): Promise<VersionDescriptor>;
-}
+    interface Asset {
+        name: string;
+        browser_download_url: string;
+    }
 
-export class GitHub implements IGitHub {
-    public constructor(
-        private httpClient: IHttpClient,
-        private logger: ILogger
-    ) {}
+    interface VersionDescriptor {
+        name: string;
+        asset: string;
+        url: string;
+    }
 
-    async getLatestRelease(owner: string, repository: string, asset: RegExp): Promise<VersionDescriptor> {
-        const response = await this.httpClient.get<Release>(`https://api.github.com/repos/${owner}/${repository}/releases/latest`);
+    export interface IGitHub {
+        getLatestRelease(owner: string, repository: string, asset: RegExp): Promise<VersionDescriptor>;
+    }
 
-        const error = response as HttpResponseError;
-        if (error) {
-            this.logger.error(`Error occurred while fetching GitHub latest release.`);
+    export class GitHub implements IGitHub {
+        public constructor(private httpClient: HttpClient.IHttpClient, private logger: Logger.ILogger) {}
 
-            throw new FetchingError();
+        async getLatestRelease(owner: string, repository: string, asset: RegExp): Promise<VersionDescriptor> {
+            const response = await this.httpClient.get<Release>(
+                `https://api.github.com/repos/${owner}/${repository}/releases/latest`
+            );
+
+            const error = response as HttpClient.HttpResponseError;
+            if (error) {
+                this.logger.error(`Error occurred while fetching GitHub latest release.`);
+
+                throw new FetchingError();
+            }
+
+            const release = <Release>response;
+
+            const assetObject = release.assets.find((x) => asset.test(x.name));
+            const url = assetObject?.browser_download_url;
+
+            if (!url) {
+                this.logger.error(`Error occurred while parsing GitHub latest release.`);
+
+                throw new ResponseParsingError();
+            }
+
+            return { name: release.tag_name, asset: assetObject.name, url: url };
         }
-
-        const release = <Release> response;
-
-        const assetObject = release.assets.find(x => asset.test(x.name));
-        const url = assetObject?.browser_download_url;
-
-        if (!url) {
-            this.logger.error(`Error occurred while parsing GitHub latest release.`);
-
-            throw new ResponseParsingError();
-        }
-
-        return { name: release.tag_name, asset: assetObject.name, url: url };
     }
 }
