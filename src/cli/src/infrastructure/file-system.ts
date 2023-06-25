@@ -1,9 +1,9 @@
 import fs from "fs";
 import fsPromises from "fs/promises";
-import { join, resolve } from "path";
 import { ServiceProvider } from "./service-provider";
 import decompress from "decompress";
 import absoluteUnixPath from "./functions/absoluteUnixPath";
+import { extname } from "path";
 
 export namespace FileSystem {
     export const iFileSystemServiceKey = "FileSystem.IFileSystem";
@@ -21,9 +21,14 @@ export namespace FileSystem {
         delete(path: string): Promise<void>;
         clearPath(...pathComponents: string[]): string;
         unzip(sourcePath: string, targetPath: string): Promise<void>;
+        getFilesRecursively(directoryPath: string, ...extensions: string[]): Promise<string[]>;
+        getExtension(path: string): string;
     }
 
     export class FileSystem implements IFileSystem {
+        getExtension(path: string): string {
+            return extname(path).substring(1);
+        }
         async unzip(sourcePath: string, targetPath: string): Promise<void> {
             await decompress(sourcePath, targetPath);
         }
@@ -61,6 +66,22 @@ export namespace FileSystem {
             return await fsPromises.readFile(path, {
                 encoding: "utf-8",
             });
+        }
+        async getFilesRecursively(directoryPath: string): Promise<string[]> {
+            const directories = await fsPromises.readdir(directoryPath, { withFileTypes: true });
+            const filesPaths = [];
+
+            for (const entry of directories) {
+                const path = this.clearPath(directoryPath, entry.name);
+
+                if (entry.isDirectory()) {
+                    filesPaths.push(...(await this.getFilesRecursively(path)));
+                } else {
+                    filesPaths.push(path);
+                }
+            }
+
+            return filesPaths;
         }
     }
 }
