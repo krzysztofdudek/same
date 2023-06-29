@@ -2,7 +2,6 @@ import { Manifest } from "../core/manifest.js";
 import { Toolset } from "../core/toolset.js";
 import { ICommand as ICommandCore } from "../core/command.js";
 import { ServiceProvider } from "../infrastructure/service-provider.js";
-import { Logger } from "../infrastructure/logger.js";
 import { FileSystem } from "../infrastructure/file-system.js";
 
 const vsCodeTasksFileContext = `{
@@ -111,9 +110,6 @@ export namespace InitializeCommand {
                 new Command(
                     serviceProvider.resolve(Manifest.iOptionsServiceKey),
                     serviceProvider.resolve(Toolset.iOptionsServiceKey),
-                    serviceProvider
-                        .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
-                        .create(iCommandServiceKey),
                     serviceProvider.resolve(Toolset.iToolsetServiceKey),
                     serviceProvider.resolve(Manifest.iManifestRepositoryServiceKey),
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey)
@@ -134,7 +130,6 @@ export namespace InitializeCommand {
         public constructor(
             private manifestOptions: Manifest.IOptions,
             private toolsOptions: Toolset.IOptions,
-            private logger: Logger.ILogger,
             private toolset: Toolset.IToolset,
             private manifestRepository: Manifest.IManifestRepository,
             private fileSystem: FileSystem.IFileSystem
@@ -144,8 +139,6 @@ export namespace InitializeCommand {
             this.manifestOptions.workingDirectory = options.workingDirectoryPath;
             this.toolsOptions.toolsDirectoryPath = options.toolsDirectoryPath;
 
-            this.logger.info("Toolset initialization started.");
-
             try {
                 await this.toolset.configure();
             } catch {
@@ -153,7 +146,6 @@ export namespace InitializeCommand {
             }
 
             await this.setupManifestFile(options.name);
-
             await this.createVsCodeTasks(options.workingDirectoryPath);
             await this.createVsCodeExtensions(options.workingDirectoryPath);
             await this.createVsCodeSettings(options.workingDirectoryPath);
@@ -161,8 +153,6 @@ export namespace InitializeCommand {
             await this.createGitAttributes(options.workingDirectoryPath);
             await this.createGitIgnore(options.workingDirectoryPath);
             await this.createMarkdownLint(options.workingDirectoryPath);
-
-            this.logger.info("Toolset initialization finished.");
         }
 
         private async setupManifestFile(name: string) {

@@ -37,7 +37,7 @@
 //     await Java.check();
 //     await Graphviz.check();
 
-//     console.log(chalk.greenBright("Started serving."));
+//     console.log(chalk.greenBright("Started serving"));
 
 //     manifestFile = new ManifestFile(options.workingDirectoryPath);
 //     await manifestFile.load();
@@ -102,7 +102,7 @@
 //     });
 
 //     enforceReload = function () {
-//         console.log(chalk.blueBright("Enforcing refresh."));
+//         console.log(chalk.blueBright("Enforcing refresh"));
 
 //         wsServer.clients.forEach(function each(client) {
 //             client.send("refresh");

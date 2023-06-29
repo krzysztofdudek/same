@@ -88,7 +88,7 @@ export namespace Logger {
             }
         }
         format(logLevel: LogLevel, message: any, optionalParams: any[]): string {
-            const buildMessage = `${message}${optionalParams?.length > 0 ? `${JSON.stringify(optionalParams)}` : ""}`;
+            const buildMessage = `${message}${optionalParams?.length > 0 ? ` ${JSON.stringify(optionalParams)}` : ""}`;
 
             switch (this.loggerOptions.logFormat) {
                 case LogFormat.Compact:

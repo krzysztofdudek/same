@@ -112,7 +112,7 @@ export namespace Manifest {
                 return Manifest.fromState(state);
             }
 
-            this.logger.error("Manifest files does not exists.");
+            this.logger.error("Manifest files does not exists");
 
             return new ManifestIsNotInitialized();
         }

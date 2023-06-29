@@ -10,13 +10,13 @@
 //     }
 
 //     export async function transformAllFiles(options: Options, tool: Structurizr.Tool) {
-//         console.debug("Transforming Structurizr files.");
+//         console.debug("Transforming Structurizr files");
 
 //         await iterateOverFilesInDirectory(options.workingDirectoryPath, ["dsl"], async (filePath) => {
 //             await transformSingleFile(filePath, options, tool);
 //         });
 
-//         console.debug("Structurizr files transformed.");
+//         console.debug("Structurizr files transformed");
 //     }
 
 //     export async function transformSingleFile(filePath: string, options: Options, tool: Structurizr.Tool) {

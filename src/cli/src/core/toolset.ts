@@ -1,4 +1,5 @@
 import { FileSystem } from "../infrastructure/file-system.js";
+import { Logger } from "../infrastructure/logger.js";
 import { ServiceProvider } from "../infrastructure/service-provider.js";
 
 export namespace Toolset {
@@ -31,7 +32,10 @@ export namespace Toolset {
                 new Toolset(
                     serviceProvider.resolveMany(iToolServiceKey),
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
-                    serviceProvider.resolve(iOptionsServiceKey)
+                    serviceProvider.resolve(iOptionsServiceKey),
+                    serviceProvider
+                        .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
+                        .create(iToolServiceKey)
                 )
         );
     }
@@ -57,17 +61,28 @@ export namespace Toolset {
         public constructor(
             private tools: ITool[] = [],
             private fileSystem: FileSystem.IFileSystem,
-            private toolsOptions: IOptions
+            private toolsOptions: IOptions,
+            private logger: Logger.ILogger
         ) {}
 
         async configure(): Promise<void> {
+            this.logger.info("Toolset initialization started");
+
             await this.fileSystem.createDirectory(this.toolsOptions.toolsDirectoryPath);
 
             for (let i = 0; i < this.tools.length; i++) {
                 const tool = this.tools[i];
 
-                await tool.configure();
+                try {
+                    await tool.configure();
+                } catch (error) {
+                    this.logger.info("Toolset configuration failed");
+
+                    throw error;
+                }
             }
+
+            this.logger.info("Toolset initialization finished");
         }
     }
 
