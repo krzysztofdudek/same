@@ -1,9 +1,9 @@
-import { Awaiter } from "./awaiter";
-import { Logger } from "./logger";
-import { FileSystem } from "./file-system";
-import { ServiceProvider } from "./service-provider";
-import { Shell } from "./shell";
-import { HttpClient } from "./http-client";
+import { Awaiter } from "./awaiter.js";
+import { Logger } from "./logger.js";
+import { FileSystem } from "./file-system.js";
+import { ServiceProvider } from "./service-provider.js";
+import { Shell } from "./shell.js";
+import { HttpClient } from "./http-client.js";
 
 export namespace Infrastructure {
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {

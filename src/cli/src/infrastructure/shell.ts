@@ -1,6 +1,6 @@
 import { ChildProcess, exec } from "child_process";
 import { setTimeout } from "timers/promises";
-import { ServiceProvider } from "./service-provider";
+import { ServiceProvider } from "./service-provider.js";
 
 export namespace Shell {
     export const iShellServiceKey = "Shell.IShell";

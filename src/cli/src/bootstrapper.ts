@@ -1,7 +1,8 @@
-import { ServiceProvider } from "./infrastructure/service-provider";
-import { Infrastructure } from "./infrastructure";
-import { Tools } from "./tools";
-import { Core } from "./core";
+import { ServiceProvider } from "./infrastructure/service-provider.js";
+import { Infrastructure } from "./infrastructure/index.js";
+import { Tools } from "./tools/index.js";
+import { Core } from "./core/index.js";
+import { Commands } from "./commands/index.js";
 
 export namespace Bootstrapper {
     export const serviceProvider = new ServiceProvider.ServiceProvider();
@@ -9,4 +10,5 @@ export namespace Bootstrapper {
     Infrastructure.register(serviceProvider);
     Core.register(serviceProvider);
     Tools.register(serviceProvider);
+    Commands.register(serviceProvider);
 }

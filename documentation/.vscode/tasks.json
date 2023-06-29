@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Run Local Server",
+      "label": "Serve Documentation",
       "type": "shell",
       "command": "samecli serve"
     }

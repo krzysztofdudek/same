@@ -10,8 +10,15 @@ export namespace ServiceProvider {
         resolveMany<ServiceType>(key: string): ServiceType[];
     }
 
+    interface IEntry {
+        key: string;
+        service: unknown | null;
+        factory: () => unknown;
+        isSingleton: boolean;
+    }
+
     export class ServiceProvider implements IServiceProvider {
-        private services: { key: string; service: unknown | null; factory: () => unknown; isSingleton: boolean }[] = [];
+        private services: IEntry[] = [];
 
         public constructor() {
             this.services.push({
@@ -21,6 +28,7 @@ export namespace ServiceProvider {
                 isSingleton: true,
             });
         }
+
         registerTransient(key: string, factory: () => any): void {
             this.services.push({
                 key: key,
@@ -29,6 +37,7 @@ export namespace ServiceProvider {
                 isSingleton: false,
             });
         }
+
         registerTransientMany(keys: string[], factory: () => any): void {
             keys.forEach((key) => {
                 this.services.push({
@@ -63,25 +72,29 @@ export namespace ServiceProvider {
         resolve<ServiceType>(key: string): ServiceType {
             const entry = this.services.find((x) => x.key === key);
 
-            if (entry === undefined) {
-                throw new Error(`Service with key "${key}" cannot be resolved.`);
-            }
-
-            if (entry.service !== null) {
-                return <ServiceType>entry.service;
-            }
-
-            const instance = entry.factory();
-
-            if (entry.isSingleton) {
-                entry.service = instance;
-            }
-
-            return <ServiceType>instance;
+            return this.resolveServiceFromEntry(key, entry);
         }
 
         resolveMany<ServiceType>(key: string): ServiceType[] {
-            return this.services.filter((x) => x.key === key).map((x) => <ServiceType>x.service);
+            return this.services.filter((x) => x.key === key).map((entry) => this.resolveServiceFromEntry(key, entry));
+        }
+
+        private resolveServiceFromEntry<ServiceType>(key: string, entry?: IEntry): ServiceType {
+            if (entry === undefined) {
+                throw new Error(`Service with key "${key}" cannot be resolved`);
+            }
+
+            if (entry.service === null) {
+                const instance = entry.factory();
+
+                if (entry.isSingleton) {
+                    entry.service = instance;
+                } else {
+                    return <ServiceType>instance;
+                }
+            }
+
+            return <ServiceType>entry.service;
         }
     }
 }

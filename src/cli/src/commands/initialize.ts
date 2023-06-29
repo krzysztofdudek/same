@@ -1,76 +1,11 @@
-import chalk from "chalk";
-import path from "path";
-import fs from "fs";
-import fsPromises from "fs/promises";
-import { Java } from "../tools/java.js";
-import { PlantUml } from "../tools/plant-uml.js";
-import { Structurizr } from "../tools/structurizr.js";
-import { createDirectoryIfNotExists } from "../infrastructure/old/file-system.js";
-import { Graphviz } from "../tools/graphviz.js";
-import { Itself } from "../tools/itself.js";
-import { Bootstrapper } from "../bootstrapper.js";
 import { Manifest } from "../core/manifest.js";
 import { Toolset } from "../core/toolset.js";
+import { ICommand as ICommandCore } from "../core/command.js";
+import { ServiceProvider } from "../infrastructure/service-provider.js";
+import { Logger } from "../infrastructure/logger.js";
+import { FileSystem } from "../infrastructure/file-system.js";
 
-export interface Options {
-    name: string;
-    workingDirectoryPath: string;
-    sourceDirectoryPath: string;
-    toolsDirectoryPath: string;
-}
-
-export async function exec(options: Options) {
-    const manifestOptions = Bootstrapper.serviceProvider.resolve<Manifest.IManifestOptions>(
-        Manifest.iManifestOptionsServiceKey
-    );
-    manifestOptions.workingDirectory = options.workingDirectoryPath;
-
-    const toolsOptions = Bootstrapper.serviceProvider.resolve<Toolset.IToolsOptions>(Toolset.iToolsOptionsServiceKey);
-    toolsOptions.toolsDirectoryPath = options.toolsDirectoryPath;
-
-    const toolset = Bootstrapper.toolset();
-    const logger = Bootstrapper.loggerFactory();
-
-    logger.info("Started initialization.");
-
-    await toolset.configure();
-
-    await setupManifestFile(options.name);
-
-    await createVsCodeTasks(options.workingDirectoryPath);
-    await createVsCodeExtensions(options.workingDirectoryPath);
-    await createVsCodeSettings(options.workingDirectoryPath);
-    await createEditorConfig(options.workingDirectoryPath);
-    await createGitAttributes(options.workingDirectoryPath);
-    await createGitIgnore(options.workingDirectoryPath);
-    await createMarkdownLint(options.workingDirectoryPath);
-
-    logger.info("Initialization completed.");
-}
-
-async function setupManifestFile(name: string) {
-    const repository = Bootstrapper.manifestRepository();
-
-    let manifest: Manifest;
-
-    if (await repository.checkIfExists()) {
-        manifest = <Manifest>await repository.load();
-    } else {
-        manifest = Manifest.empty();
-        manifest.name = name;
-
-        await repository.save(manifest);
-    }
-}
-
-async function createVsCodeTasks(workingDirectoryPath: string) {
-    const directoryPath = path.join(workingDirectoryPath, ".vscode");
-
-    await createDirectoryIfNotExists(directoryPath);
-
-    const filePath = path.join(directoryPath, "tasks.json");
-
-    const content = `{
+const vsCodeTasksFileContext = `{
   "version": "2.0.0",
   "tasks": [
     {
@@ -82,17 +17,7 @@ async function createVsCodeTasks(workingDirectoryPath: string) {
 }
 `;
 
-    await createFileIfNotExists(filePath, content);
-}
-
-async function createVsCodeSettings(workingDirectoryPath: string) {
-    const directoryPath = path.join(workingDirectoryPath, ".vscode");
-
-    await createDirectoryIfNotExists(directoryPath);
-
-    const filePath = path.join(directoryPath, "settings.json");
-
-    const content = `{
+const vsCodeSettingsFileContent = `{
   "plantuml.render": "PlantUMLServer",
   "plantuml.server": "http://localhost:65100",
   "markdown.preview.scrollEditorWithPreview": false,
@@ -111,17 +36,7 @@ async function createVsCodeSettings(workingDirectoryPath: string) {
   "c4.diagram.plantuml.enabled": true
 }`;
 
-    await createFileIfNotExists(filePath, content);
-}
-
-async function createVsCodeExtensions(workingDirectoryPath: string) {
-    const directoryPath = path.join(workingDirectoryPath, ".vscode");
-
-    await createDirectoryIfNotExists(directoryPath);
-
-    const filePath = path.join(directoryPath, "extensions.json");
-
-    const content = `{
+const vsCodeExtensionsFileContent = `{
   "recommendations": [
     "streetsidesoftware.code-spell-checker",
     "alexkrechik.cucumberautocomplete",
@@ -136,13 +51,7 @@ async function createVsCodeExtensions(workingDirectoryPath: string) {
 }
 `;
 
-    await createFileIfNotExists(filePath, content);
-}
-
-async function createMarkdownLint(workingDirectoryPath: string) {
-    const filePath = path.join(workingDirectoryPath, ".markdownlint.json");
-
-    const content = `{
+const markdownlintFileContent = `{
   "single-trailing-newline": false,
   "no-bare-urls": false,
   "line-length": false,
@@ -153,23 +62,11 @@ async function createMarkdownLint(workingDirectoryPath: string) {
 }
 `;
 
-    await createFileIfNotExists(filePath, content);
-}
-
-async function createGitIgnore(workingDirectoryPath: string) {
-    const filePath = path.join(workingDirectoryPath, ".gitignore");
-
-    const content = `_tools
+const gitIgnoreFileContent = `_tools
 _generated
 _temp`;
 
-    await createFileIfNotExists(filePath, content);
-}
-
-async function createGitAttributes(workingDirectoryPath: string) {
-    const filePath = path.join(workingDirectoryPath, ".gitattributes");
-
-    const content = `*.sh            text eol=lf
+const gitAttributesFileContent = `*.sh            text eol=lf
 *.ps1           text eol=lf
 *.json          text eol=lf
 *.xml           text eol=lf
@@ -190,13 +87,7 @@ async function createGitAttributes(workingDirectoryPath: string) {
 *.jpeg          binary
 *.gif           binary`;
 
-    await createFileIfNotExists(filePath, content);
-}
-
-async function createEditorConfig(workingDirectoryPath: string) {
-    const filePath = path.join(workingDirectoryPath, ".editorconfig");
-
-    const content = `root = true
+const editorConfigFileContent = `root = true
 
 [*]
 charset = utf-8
@@ -210,17 +101,135 @@ max_line_length = off
 [*.md]
 trim_trailing_whitespace = false`;
 
-    await createFileIfNotExists(filePath, content);
-}
+export namespace InitializeCommand {
+    export const iCommandServiceKey = "InitializeCommand.ICommand";
 
-async function createFileIfNotExists(filePath: string, content: string) {
-    if (fs.existsSync(filePath)) {
-        return;
+    export function register(serviceProvider: ServiceProvider.IServiceProvider) {
+        serviceProvider.registerSingleton(
+            iCommandServiceKey,
+            () =>
+                new Command(
+                    serviceProvider.resolve(Manifest.iOptionsServiceKey),
+                    serviceProvider.resolve(Toolset.iOptionsServiceKey),
+                    serviceProvider
+                        .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
+                        .create(iCommandServiceKey),
+                    serviceProvider.resolve(Toolset.iToolsetServiceKey),
+                    serviceProvider.resolve(Manifest.iManifestRepositoryServiceKey),
+                    serviceProvider.resolve(FileSystem.iFileSystemServiceKey)
+                )
+        );
     }
 
-    await fsPromises.writeFile(filePath, content, {
-        encoding: "utf8",
-    });
+    export interface IOptions {
+        name: string;
+        workingDirectoryPath: string;
+        sourceDirectoryPath: string;
+        toolsDirectoryPath: string;
+    }
 
-    console.debug(`Created ${path.basename(filePath)}.`);
+    export interface ICommand extends ICommandCore<IOptions> {}
+
+    export class Command implements ICommand {
+        public constructor(
+            private manifestOptions: Manifest.IOptions,
+            private toolsOptions: Toolset.IOptions,
+            private logger: Logger.ILogger,
+            private toolset: Toolset.IToolset,
+            private manifestRepository: Manifest.IManifestRepository,
+            private fileSystem: FileSystem.IFileSystem
+        ) {}
+
+        async execute(options: IOptions): Promise<void> {
+            this.manifestOptions.workingDirectory = options.workingDirectoryPath;
+            this.toolsOptions.toolsDirectoryPath = options.toolsDirectoryPath;
+
+            this.logger.info("Toolset initialization started.");
+
+            try {
+                await this.toolset.configure();
+            } catch {
+                return;
+            }
+
+            await this.setupManifestFile(options.name);
+
+            await this.createVsCodeTasks(options.workingDirectoryPath);
+            await this.createVsCodeExtensions(options.workingDirectoryPath);
+            await this.createVsCodeSettings(options.workingDirectoryPath);
+            await this.createEditorConfig(options.workingDirectoryPath);
+            await this.createGitAttributes(options.workingDirectoryPath);
+            await this.createGitIgnore(options.workingDirectoryPath);
+            await this.createMarkdownLint(options.workingDirectoryPath);
+
+            this.logger.info("Toolset initialization finished.");
+        }
+
+        private async setupManifestFile(name: string) {
+            let manifest: Manifest.Manifest;
+
+            if (await this.manifestRepository.checkIfExists()) {
+                manifest = <Manifest.Manifest>await this.manifestRepository.load();
+            } else {
+                manifest = Manifest.Manifest.empty();
+                manifest.name = name;
+
+                await this.manifestRepository.save(manifest);
+            }
+        }
+
+        private async createVsCodeTasks(workingDirectoryPath: string) {
+            const directoryPath = this.fileSystem.clearPath(workingDirectoryPath, ".vscode");
+
+            await this.fileSystem.createDirectory(directoryPath);
+
+            const filePath = this.fileSystem.clearPath(directoryPath, "tasks.json");
+
+            await this.fileSystem.createFileIfNotExists(filePath, vsCodeTasksFileContext);
+        }
+
+        private async createVsCodeSettings(workingDirectoryPath: string) {
+            const directoryPath = this.fileSystem.clearPath(workingDirectoryPath, ".vscode");
+
+            await this.fileSystem.createDirectory(directoryPath);
+
+            const filePath = this.fileSystem.clearPath(directoryPath, "settings.json");
+
+            await this.fileSystem.createFileIfNotExists(filePath, vsCodeSettingsFileContent);
+        }
+
+        private async createVsCodeExtensions(workingDirectoryPath: string) {
+            const directoryPath = this.fileSystem.clearPath(workingDirectoryPath, ".vscode");
+
+            await this.fileSystem.createDirectory(directoryPath);
+
+            const filePath = this.fileSystem.clearPath(directoryPath, "extensions.json");
+
+            await this.fileSystem.createFileIfNotExists(filePath, vsCodeExtensionsFileContent);
+        }
+
+        private async createMarkdownLint(workingDirectoryPath: string) {
+            const filePath = this.fileSystem.clearPath(workingDirectoryPath, ".markdownlint.json");
+
+            await this.fileSystem.createFileIfNotExists(filePath, markdownlintFileContent);
+        }
+
+        private async createGitIgnore(workingDirectoryPath: string) {
+            const filePath = this.fileSystem.clearPath(workingDirectoryPath, ".gitignore");
+
+            await this.fileSystem.createFileIfNotExists(filePath, gitIgnoreFileContent);
+        }
+
+        private async createGitAttributes(workingDirectoryPath: string) {
+            const filePath = this.fileSystem.clearPath(workingDirectoryPath, ".gitattributes");
+
+            await this.fileSystem.createFileIfNotExists(filePath, gitAttributesFileContent);
+        }
+
+        private async createEditorConfig(workingDirectoryPath: string) {
+            const filePath = this.fileSystem.clearPath(workingDirectoryPath, ".editorconfig");
+
+            await this.fileSystem.createFileIfNotExists(filePath, editorConfigFileContent);
+        }
+    }
 }

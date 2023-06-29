@@ -1,8 +1,8 @@
 import https from "https";
 import fs from "fs";
 import fsPromises from "fs/promises";
-import { Logger } from "./logger";
-import { ServiceProvider } from "./service-provider";
+import { Logger } from "./logger.js";
+import { ServiceProvider } from "./service-provider.js";
 
 export namespace HttpClient {
     export const iHttpClientServiceKey = "HttpClient.IHttpClient";
@@ -19,13 +19,12 @@ export namespace HttpClient {
         );
     }
 
-    export interface HttpResponseError {
-        code: number;
-        body: string;
+    export class HttpResponseError {
+        public constructor(public code: number, public body: string) {}
     }
 
     export interface IHttpClient {
-        get<ResponseType>(url: string): Promise<HttpResponseError | ResponseType>;
+        get<ResponseType>(url: string): Promise<ResponseType>;
         downloadFile(url: string, filePath: string): Promise<void>;
     }
 
@@ -40,14 +39,14 @@ export namespace HttpClient {
             await new Promise(async (resolve, reject) => {
                 https.get(url, async (response) => {
                     if (response.statusCode === 200) {
-                        this.logger.debug(`Downloading ${url}.`);
+                        this.logger.debug(`Downloading: ${url}`);
 
                         const file = fs.createWriteStream(filePath, { flags: "wx" });
 
                         const handleError = async (error: any) => {
                             file.close(async (fileClosingError) => {
                                 if (fileClosingError) {
-                                    this.logger.error("Error occurred while closing file.");
+                                    this.logger.error("Error occurred while closing file");
 
                                     reject(fileClosingError);
                                 } else {
@@ -61,20 +60,20 @@ export namespace HttpClient {
                         };
 
                         file.on("error", (error) => {
-                            this.logger.error("Error occurred while saving file.");
+                            this.logger.error("Error occurred while saving file");
 
                             handleError(error);
                         });
 
                         response.on("error", (error) => {
-                            this.logger.error("Error occurred while fetching file.");
+                            this.logger.error("Error occurred while fetching file");
 
                             handleError(error);
                         });
 
                         response
                             .on("end", () => {
-                                console.debug(`${url} downloaded.`);
+                                this.logger.debug(`Downloaded: ${url} downloaded`);
 
                                 file.end();
 
@@ -94,17 +93,14 @@ export namespace HttpClient {
                 });
             });
         }
-        async get<ResponseType>(url: string): Promise<HttpResponseError | ResponseType> {
+        async get<ResponseType>(url: string): Promise<ResponseType> {
             const response = await fetch(url);
 
             if (!response.ok) {
-                return {
-                    code: response.status,
-                    body: await response.text(),
-                };
+                throw new HttpResponseError(response.status, await response.text());
             }
 
-            return await response.json();
+            return <ResponseType>await response.json();
         }
     }
 }

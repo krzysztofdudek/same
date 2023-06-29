@@ -14,11 +14,11 @@ export namespace Structurizr {
     export const toolServiceKey = "Structurizr.Tool";
 
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
-        serviceProvider.registerSingleton(
-            toolServiceKey,
+        serviceProvider.registerSingletonMany(
+            [Toolset.iToolServiceKey, toolServiceKey],
             () =>
                 new Tool(
-                    serviceProvider.resolve(Toolset.iToolsOptionsServiceKey),
+                    serviceProvider.resolve(Toolset.iOptionsServiceKey),
                     serviceProvider.resolve(GitHub.iGitHubServiceKey),
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
                     serviceProvider.resolve(Toolset.iToolsetVersionsServiceKey),
@@ -33,7 +33,7 @@ export namespace Structurizr {
 
     export class Tool implements Toolset.ITool {
         public constructor(
-            private toolsOptions: Toolset.IToolsOptions,
+            private toolsOptions: Toolset.IOptions,
             private gitHub: GitHub.IGitHub,
             private fileSystem: FileSystem.IFileSystem,
             private toolsetVersions: Toolset.IToolsetVersions,
@@ -52,6 +52,8 @@ export namespace Structurizr {
             const currentVersion = await this.toolsetVersions.getToolVersion(toolName);
 
             if (latestVersionDescriptor.name === currentVersion) {
+                this.logger.debug("Structurizr is up to date");
+
                 return;
             }
 
@@ -62,11 +64,11 @@ export namespace Structurizr {
             );
 
             await this.fileSystem.delete(unzippedDirectory);
-            this.logger.debug("Downloading binaries.");
+            this.logger.debug("Downloading binaries");
             await this.httpClient.downloadFile(latestVersionDescriptor.url, zipPath);
-            this.logger.debug("Unpacking binaries.");
+            this.logger.debug("Unpacking binaries");
             await this.fileSystem.unzip(zipPath, unzippedDirectory);
-            this.logger.debug("Ready.");
+            this.logger.debug("Ready");
             await this.fileSystem.delete(zipPath);
 
             await this.toolsetVersions.setToolVersion(toolName, latestVersionDescriptor.name);

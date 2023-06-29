@@ -12,7 +12,8 @@
         "build-dev": "tsc -p tsconfig-build-dev.json",
         "build-tests": "tsc -p tsconfig-build-tests.json",
         "test": "mocha 'dist-tests/tests/**/*.js' --recursive --timeout 60000 --exit",
-        "watch": "tsc -watch -p tsconfig-build-dev.json"
+        "watch-dev": "tsc -watch -p tsconfig-build-dev.json",
+        "watch-tests": "tsc -watch -p tsconfig-build-tests.json"
     },
     "repository": {
         "type": "git",

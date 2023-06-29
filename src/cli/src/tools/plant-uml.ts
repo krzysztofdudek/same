@@ -27,7 +27,7 @@ export namespace PlantUml {
             [Toolset.iToolServiceKey, toolServiceKey],
             () =>
                 new Tool(
-                    serviceProvider.resolve(Toolset.iToolsOptionsServiceKey),
+                    serviceProvider.resolve(Toolset.iOptionsServiceKey),
                     serviceProvider.resolve(GitHub.iGitHubServiceKey),
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
                     serviceProvider.resolve(Toolset.iToolsetVersionsServiceKey),
@@ -47,7 +47,7 @@ export namespace PlantUml {
 
     export class Tool implements Toolset.ITool {
         public constructor(
-            private toolsOptions: Toolset.IToolsOptions,
+            private toolsOptions: Toolset.IOptions,
             private gitHub: GitHub.IGitHub,
             private fileSystem: FileSystem.IFileSystem,
             private toolsetVersions: Toolset.IToolsetVersions,
@@ -57,18 +57,20 @@ export namespace PlantUml {
             private logger: Logger.ILogger
         ) {}
 
-        async configure(): Promise<void | Toolset.ConfigurationError> {
+        async configure(): Promise<void> {
             const latestVersionDescriptor = await this.gitHub.getLatestRelease("plantuml", "plantuml", /plantuml\.jar/);
 
             const currentVersion = await this.toolsetVersions.getToolVersion(toolName);
 
             if (latestVersionDescriptor.name === currentVersion) {
+                this.logger.debug("PlantUML is up to date");
+
                 return;
             }
 
-            this.logger.debug("Downloading binaries.");
+            this.logger.debug("Downloading binaries");
             await this.httpClient.downloadFile(latestVersionDescriptor.url, this.getJarPath());
-            this.logger.debug("Ready.");
+            this.logger.debug("Ready");
 
             await this.toolsetVersions.setToolVersion(toolName, latestVersionDescriptor.name);
         }

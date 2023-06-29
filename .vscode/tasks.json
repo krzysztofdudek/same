@@ -4,7 +4,22 @@
         {
             "label": "Watch CLI",
             "type": "npm",
-            "script": "watch",
+            "script": "watch-dev",
+            "problemMatcher": "$tsc-watch",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "never"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "path": "./src/cli"
+        },
+        {
+            "label": "Watch Tests CLI",
+            "type": "npm",
+            "script": "watch-tests",
             "problemMatcher": "$tsc-watch",
             "isBackground": true,
             "presentation": {

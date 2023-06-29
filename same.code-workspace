@@ -36,6 +36,7 @@
         },
         "[typescript]": {
             "editor.defaultFormatter": "esbenp.prettier-vscode"
-        }
+        },
+        "prettier.endOfLine": "lf"
     }
 }

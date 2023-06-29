@@ -1,6 +1,6 @@
-import { HttpClient } from "../infrastructure/http-client";
-import { Logger } from "../infrastructure/logger";
-import { ServiceProvider } from "../infrastructure/service-provider";
+import { HttpClient } from "../infrastructure/http-client.js";
+import { Logger } from "../infrastructure/logger.js";
+import { ServiceProvider } from "../infrastructure/service-provider.js";
 
 export namespace GitHub {
     export const iGitHubServiceKey = "GitHub.IGitHub";
@@ -46,18 +46,17 @@ export namespace GitHub {
         public constructor(private httpClient: HttpClient.IHttpClient, private logger: Logger.ILogger) {}
 
         async getLatestRelease(owner: string, repository: string, asset: RegExp): Promise<VersionDescriptor> {
-            const response = await this.httpClient.get<Release>(
-                `https://api.github.com/repos/${owner}/${repository}/releases/latest`
-            );
+            let release: Release;
 
-            const error = response as HttpClient.HttpResponseError;
-            if (error) {
-                this.logger.error(`Error occurred while fetching GitHub latest release.`);
+            try {
+                release = await this.httpClient.get<Release>(
+                    `https://api.github.com/repos/${owner}/${repository}/releases/latest`
+                );
+            } catch (error) {
+                this.logger.error(`Error occurred while fetching GitHub latest release.`, error);
 
                 throw new FetchingError();
             }
-
-            const release = <Release>response;
 
             const assetObject = release.assets.find((x) => asset.test(x.name));
             const url = assetObject?.browser_download_url;

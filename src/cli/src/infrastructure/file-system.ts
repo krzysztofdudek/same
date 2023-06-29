@@ -1,8 +1,8 @@
 import fs from "fs";
 import fsPromises from "fs/promises";
-import { ServiceProvider } from "./service-provider";
+import { ServiceProvider } from "./service-provider.js";
 import decompress from "decompress";
-import absoluteUnixPath from "./functions/absoluteUnixPath";
+import absoluteUnixPath from "./functions/absoluteUnixPath.js";
 import { extname } from "path";
 
 export namespace FileSystem {

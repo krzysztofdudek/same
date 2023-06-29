@@ -1,7 +1,7 @@
-import { ServiceProvider } from "../infrastructure/service-provider";
-import { GitHub } from "./github";
-import { Manifest } from "./manifest";
-import { Toolset } from "./toolset";
+import { ServiceProvider } from "../infrastructure/service-provider.js";
+import { GitHub } from "./github.js";
+import { Manifest } from "./manifest.js";
+import { Toolset } from "./toolset.js";
 
 export namespace Core {
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {

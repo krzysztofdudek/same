@@ -1,9 +1,9 @@
-import { ServiceProvider } from "../infrastructure/service-provider";
-import { Graphviz } from "./graphviz";
-import { Itself } from "./itself";
-import { Java } from "./java";
-import { PlantUml } from "./plant-uml";
-import { Structurizr } from "./structurizr";
+import { ServiceProvider } from "../infrastructure/service-provider.js";
+import { Graphviz } from "./graphviz.js";
+import { Itself } from "./itself.js";
+import { Java } from "./java.js";
+import { PlantUml } from "./plant-uml.js";
+import { Structurizr } from "./structurizr.js";
 
 export namespace Tools {
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {

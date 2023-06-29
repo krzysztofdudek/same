@@ -1,5 +1,5 @@
 import { setTimeout } from "timers/promises";
-import { ServiceProvider } from "./service-provider";
+import { ServiceProvider } from "./service-provider.js";
 
 export namespace Awaiter {
     export const iAwaiterServiceKey = "Awaiter.IAwaiter";

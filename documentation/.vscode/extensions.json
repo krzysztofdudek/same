@@ -1,7 +1,6 @@
 {
-	"recommendations": [
-		"dbaeumer.vscode-eslint",
-		"streetsidesoftware.code-spell-checker",
+  "recommendations": [
+    "streetsidesoftware.code-spell-checker",
     "alexkrechik.cucumberautocomplete",
     "EditorConfig.EditorConfig",
     "ms-vsliveshare.vsliveshare",
@@ -10,5 +9,5 @@
     "systemticks.c4-dsl-extension",
     "Gruntfuggly.todo-tree",
     "DavidAnson.vscode-markdownlint"
-	]
+  ]
 }

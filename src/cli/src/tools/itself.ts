@@ -29,14 +29,14 @@ export namespace Itself {
             private awaiter: Awaiter.IAwaiter
         ) {}
 
-        async configure(): Promise<void | Toolset.ConfigurationError> {
+        async configure(): Promise<void> {
             const result = await this.shell.executeCommand("npm view same-cli version");
             const version = result.stdout;
 
             if (version != itselfVersion) {
-                this.logger.warn('Please update this package with "npm update same-cli".');
+                this.logger.warn('Please update this package with "npm update same-cli"');
 
-                await this.awaiter.wait(3000);
+                await this.awaiter.wait(1000);
             }
 
             return;

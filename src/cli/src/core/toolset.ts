@@ -1,17 +1,17 @@
-import { FileSystem } from "../infrastructure/file-system";
-import { ServiceProvider } from "../infrastructure/service-provider";
+import { FileSystem } from "../infrastructure/file-system.js";
+import { ServiceProvider } from "../infrastructure/service-provider.js";
 
 export namespace Toolset {
-    export const iToolsOptionsServiceKey = "Toolset.IToolsOptions";
+    export const iOptionsServiceKey = "Toolset.IOptions";
     export const iToolServiceKey = "Toolset.ITool";
     export const iToolsetServiceKey = "Toolset.IToolset";
     export const iToolsetVersionsServiceKey = "Toolset.IToolsetVersions";
 
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
         serviceProvider.registerSingleton(
-            iToolsOptionsServiceKey,
+            iOptionsServiceKey,
             () =>
-                <IToolsOptions>{
+                <IOptions>{
                     toolsDirectoryPath: "",
                 }
         );
@@ -21,7 +21,7 @@ export namespace Toolset {
             () =>
                 new ToolsetVersions(
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
-                    serviceProvider.resolve(iToolsOptionsServiceKey)
+                    serviceProvider.resolve(iOptionsServiceKey)
                 )
         );
 
@@ -31,25 +31,21 @@ export namespace Toolset {
                 new Toolset(
                     serviceProvider.resolveMany(iToolServiceKey),
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
-                    serviceProvider.resolve(iToolsOptionsServiceKey)
+                    serviceProvider.resolve(iOptionsServiceKey)
                 )
         );
     }
 
-    export class ConfigurationError {
-        public constructor(public message: string) {}
-    }
-
-    export interface IToolsOptions {
+    export interface IOptions {
         toolsDirectoryPath: string;
     }
 
     export interface ITool {
-        configure(): Promise<void | ConfigurationError>;
+        configure(): Promise<void>;
     }
 
     export interface IToolset {
-        configure(): Promise<void | ConfigurationError>;
+        configure(): Promise<void>;
     }
 
     export interface IToolsetVersions {
@@ -61,20 +57,16 @@ export namespace Toolset {
         public constructor(
             private tools: ITool[] = [],
             private fileSystem: FileSystem.IFileSystem,
-            private toolsOptions: IToolsOptions
+            private toolsOptions: IOptions
         ) {}
 
-        async configure(): Promise<void | ConfigurationError> {
+        async configure(): Promise<void> {
             await this.fileSystem.createDirectory(this.toolsOptions.toolsDirectoryPath);
 
             for (let i = 0; i < this.tools.length; i++) {
                 const tool = this.tools[i];
 
-                const result = await tool.configure();
-
-                if (result instanceof ConfigurationError) {
-                    return result;
-                }
+                await tool.configure();
             }
         }
     }
@@ -82,7 +74,7 @@ export namespace Toolset {
     type Versions = { [key: string]: string };
 
     class ToolsetVersions implements IToolsetVersions {
-        public constructor(private fileSystem: FileSystem.IFileSystem, private toolsOptions: IToolsOptions) {}
+        public constructor(private fileSystem: FileSystem.IFileSystem, private toolsOptions: IOptions) {}
 
         async getToolVersion(name: string): Promise<string | null> {
             const versions = await this.getFile();
@@ -98,7 +90,7 @@ export namespace Toolset {
         }
 
         async getFile(): Promise<Versions> {
-            if (await this.fileSystem.checkIfExists(this.getPath())) {
+            if (!(await this.fileSystem.checkIfExists(this.getPath()))) {
                 return {};
             }
 

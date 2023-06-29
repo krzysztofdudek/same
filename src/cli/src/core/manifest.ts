@@ -3,14 +3,14 @@ import { Logger } from "../infrastructure/logger.js";
 import { ServiceProvider } from "../infrastructure/service-provider.js";
 
 export namespace Manifest {
-    export const iManifestOptionsServiceKey = "Manifest.IManifestOptions";
+    export const iOptionsServiceKey = "Manifest.IOptions";
     export const iManifestRepositoryServiceKey = "Manifest.IManifestRepository";
 
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
         serviceProvider.registerSingleton(
-            iManifestOptionsServiceKey,
+            iOptionsServiceKey,
             () =>
-                <IManifestOptions>{
+                <IOptions>{
                     workingDirectory: "",
                 }
         );
@@ -20,7 +20,7 @@ export namespace Manifest {
             () =>
                 new ManifestRepository(
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
-                    serviceProvider.resolve(iManifestOptionsServiceKey),
+                    serviceProvider.resolve(iOptionsServiceKey),
                     serviceProvider
                         .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
                         .create(iManifestRepositoryServiceKey)
@@ -30,7 +30,7 @@ export namespace Manifest {
 
     const fileName: string = "manifest.json";
 
-    export interface IManifestOptions {
+    export interface IOptions {
         workingDirectory: string;
     }
 
@@ -81,7 +81,7 @@ export namespace Manifest {
     export class ManifestRepository implements IManifestRepository {
         public constructor(
             private fileSystem: FileSystem.IFileSystem,
-            private options: IManifestOptions,
+            private options: IOptions,
             private logger: Logger.ILogger
         ) {
             this.fileSystem = fileSystem;
