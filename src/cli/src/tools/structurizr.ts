@@ -31,7 +31,11 @@ export namespace Structurizr {
         );
     }
 
-    export class Tool implements Toolset.ITool {
+    export interface ITool extends Toolset.ITool {
+        generateDiagrams(filePath: string, outputDirectoryPath: string): Promise<void>;
+    }
+
+    export class Tool implements ITool {
         public constructor(
             private toolsOptions: Toolset.IOptions,
             private gitHub: GitHub.IGitHub,

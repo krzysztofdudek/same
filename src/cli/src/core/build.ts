@@ -89,13 +89,13 @@ export namespace Build {
     }
 
     export interface IFileBuilder {
-        fileExtension: string;
+        fileExtensions: string[];
 
         build(filePath: string): Promise<void>;
     }
 
     export interface IFileDependencyIntrospector {
-        fileExtension: string;
+        fileExtensions: string[];
 
         getDependencies(filePath: string, fileContent: string): Promise<string[]>;
     }
@@ -132,7 +132,7 @@ export namespace Build {
     }
 
     export interface IFileAnalyzer {
-        fileExtension: string;
+        fileExtensions: string[];
 
         getAnalysisResults(filePath: string, fileContent: string): Promise<AnalysisResult[]>;
     }
@@ -230,7 +230,7 @@ export namespace Build {
             const dependencies = await this.analyzeDependencies(fileExtension, filePath, fileContent);
             const analysisResults = await this.analyzeFile(fileExtension, filePath, fileContent);
 
-            await this.checkIfDependenciesExist(dependencies, analysisResults, filePath);
+            await this.checkIfDependenciesExist(dependencies, analysisResults);
 
             this.printAnalysisResults(analysisResults, compactFilePath);
 
@@ -241,7 +241,9 @@ export namespace Build {
 
         private async analyzeFile(fileExtension: string, filePath: string, fileContent: string) {
             const analysisResults: AnalysisResult[] = [];
-            const fileAnalyzers = this.fileAnalyzers.filter((x) => x.fileExtension === fileExtension);
+            const fileAnalyzers = this.fileAnalyzers.filter(
+                (x) => x.fileExtensions.findIndex((y) => y === fileExtension) > -1
+            );
 
             for (let j = 0; j < fileAnalyzers.length; j++) {
                 const fileAnalyzer = fileAnalyzers[j];
@@ -258,7 +260,9 @@ export namespace Build {
             filePath: string,
             fileContent: string
         ): Promise<string[]> {
-            const dependencyFinders = this.dependencyFinders.filter((x) => x.fileExtension === fileExtension);
+            const dependencyFinders = this.dependencyFinders.filter(
+                (x) => x.fileExtensions.findIndex((y) => y === fileExtension) > -1
+            );
             const dependencies: string[] = [];
 
             for (let j = 0; j < dependencyFinders.length; j++) {
@@ -297,11 +301,7 @@ export namespace Build {
             });
         }
 
-        private async checkIfDependenciesExist(
-            dependencies: string[],
-            analysisResults: AnalysisResult[],
-            filePath: string
-        ) {
+        private async checkIfDependenciesExist(dependencies: string[], analysisResults: AnalysisResult[]) {
             for (let i = 0; i < dependencies.length; i++) {
                 const dependency = dependencies[i];
 
@@ -382,7 +382,9 @@ export namespace Build {
         }
 
         async buildInternal(file: FileToBuild): Promise<void> {
-            const fileBuilders = this.fileBuilders.filter((x) => x.fileExtension === file.extension);
+            const fileBuilders = this.fileBuilders.filter(
+                (x) => x.fileExtensions.findIndex((y) => y === file.extension) > -1
+            );
 
             for (let j = 0; j < fileBuilders.length; j++) {
                 const fileBuilder = fileBuilders[j];
