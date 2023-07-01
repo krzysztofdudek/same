@@ -4,7 +4,7 @@ import { ServiceProvider } from "../infrastructure/service-provider.js";
 
 export namespace Manifest {
     export const iOptionsServiceKey = "Manifest.IOptions";
-    export const iManifestRepositoryServiceKey = "Manifest.IManifestRepository";
+    export const iRepositoryServiceKey = "Manifest.IRepository";
 
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
         serviceProvider.registerSingleton(
@@ -16,14 +16,14 @@ export namespace Manifest {
         );
 
         serviceProvider.registerSingleton(
-            iManifestRepositoryServiceKey,
+            iRepositoryServiceKey,
             () =>
-                new ManifestRepository(
+                new Repository(
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
                     serviceProvider.resolve(iOptionsServiceKey),
                     serviceProvider
                         .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
-                        .create(iManifestRepositoryServiceKey)
+                        .create(iRepositoryServiceKey)
                 )
         );
     }
@@ -72,13 +72,13 @@ export namespace Manifest {
 
     export class ManifestCanNotBeLoaded {}
 
-    export interface IManifestRepository {
+    export interface IRepository {
         load(): Promise<Manifest | ManifestIsNotInitialized>;
         save(manifest: Manifest): Promise<void>;
         checkIfExists(): Promise<boolean>;
     }
 
-    export class ManifestRepository implements IManifestRepository {
+    export class Repository implements IRepository {
         public constructor(
             private fileSystem: FileSystem.IFileSystem,
             private options: IOptions,

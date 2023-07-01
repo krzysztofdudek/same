@@ -45,7 +45,8 @@ const vsCodeExtensionsFileContent = `{
     "jebbs.plantuml",
     "systemticks.c4-dsl-extension",
     "Gruntfuggly.todo-tree",
-    "DavidAnson.vscode-markdownlint"
+    "DavidAnson.vscode-markdownlint",
+    "Arjun.swagger-viewer"
   ]
 }
 `;
@@ -111,7 +112,7 @@ export namespace InitializeCommand {
                     serviceProvider.resolve(Manifest.iOptionsServiceKey),
                     serviceProvider.resolve(Toolset.iOptionsServiceKey),
                     serviceProvider.resolve(Toolset.iToolsetServiceKey),
-                    serviceProvider.resolve(Manifest.iManifestRepositoryServiceKey),
+                    serviceProvider.resolve(Manifest.iRepositoryServiceKey),
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey)
                 )
         );
@@ -131,7 +132,7 @@ export namespace InitializeCommand {
             private manifestOptions: Manifest.IOptions,
             private toolsOptions: Toolset.IOptions,
             private toolset: Toolset.IToolset,
-            private manifestRepository: Manifest.IManifestRepository,
+            private manifestRepository: Manifest.IRepository,
             private fileSystem: FileSystem.IFileSystem
         ) {}
 
@@ -145,6 +146,7 @@ export namespace InitializeCommand {
                 return;
             }
 
+            await this.fileSystem.createDirectory(options.sourceDirectoryPath);
             await this.setupManifestFile(options.name);
             await this.createVsCodeTasks(options.workingDirectoryPath);
             await this.createVsCodeExtensions(options.workingDirectoryPath);

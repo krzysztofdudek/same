@@ -75,8 +75,8 @@ export namespace PlantUml {
             await this.toolsetVersions.setToolVersion(toolName, latestVersionDescriptor.name);
         }
 
-        public runServer(): IServer {
-            return new Server(this.shell, this.getJarPath(), this.options.serverPort);
+        public createServer(): IServer {
+            return new Server(this.shell, this.logger, this.getJarPath(), this.options.serverPort);
         }
 
         getJarPath(): string {
@@ -93,13 +93,22 @@ export namespace PlantUml {
     export class Server implements IServer {
         private process: Shell.IProcess | null = null;
 
-        constructor(private shell: Shell.IShell, private jarPath: string, private port: number) {}
+        constructor(
+            private shell: Shell.IShell,
+            private logger: Logger.ILogger,
+            private jarPath: string,
+            private port: number
+        ) {}
 
         start() {
+            this.logger.debug("Starting PlantUML server");
+
             this.process = this.shell.runProcess(`java -jar "${this.jarPath}" -picoweb:${this.port}`);
         }
 
         stop() {
+            this.logger.debug("Stopping PlantUML server");
+
             this.process?.kill();
         }
 

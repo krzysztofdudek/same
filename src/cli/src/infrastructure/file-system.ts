@@ -3,7 +3,7 @@ import fsPromises from "fs/promises";
 import { ServiceProvider } from "./service-provider.js";
 import decompress from "decompress";
 import absoluteUnixPath from "./functions/absoluteUnixPath.js";
-import { extname } from "path";
+import { dirname, extname } from "path";
 
 export namespace FileSystem {
     export const iFileSystemServiceKey = "FileSystem.IFileSystem";
@@ -23,9 +23,13 @@ export namespace FileSystem {
         unzip(sourcePath: string, targetPath: string): Promise<void>;
         getFilesRecursively(directoryPath: string, ...extensions: string[]): Promise<string[]>;
         getExtension(path: string): string;
+        getDirectory(path: string): string;
     }
 
     export class FileSystem implements IFileSystem {
+        getDirectory(path: string): string {
+            return this.clearPath(dirname(path));
+        }
         getExtension(path: string): string {
             return extname(path).substring(1);
         }

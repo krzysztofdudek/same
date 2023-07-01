@@ -10,7 +10,7 @@ export namespace Logger {
             iOptionsServiceKey,
             () =>
                 <IOptions>{
-                    minimalLogLevel: LogLevel.Trace,
+                    minimalLogLevel: LogLevel.Information,
                     logFormat: LogFormat.Compact,
                 }
         );
@@ -39,16 +39,16 @@ export namespace Logger {
     }
 
     export enum LogFormat {
-        Compact,
-        Extensive,
+        Compact = "Compact",
+        Extensive = "Extensive",
     }
 
     export enum LogLevel {
-        Trace,
-        Debug,
-        Information,
-        Warning,
-        Error,
+        Trace = "Trace",
+        Debug = "Debug",
+        Information = "Information",
+        Warning = "Warning",
+        Error = "Error",
     }
 
     export class LoggerFactory implements ILoggerFactory {
@@ -62,29 +62,44 @@ export namespace Logger {
     export class ConsoleLogger implements ILogger {
         public constructor(private loggerOptions: IOptions, private name: string) {}
 
+        private minimalLogLevelNumber() {
+            switch (this.loggerOptions.minimalLogLevel) {
+                case LogLevel.Trace:
+                    return 0;
+                case LogLevel.Debug:
+                    return 1;
+                case LogLevel.Information:
+                    return 2;
+                case LogLevel.Warning:
+                    return 3;
+                case LogLevel.Error:
+                    return 4;
+            }
+        }
+
         trace(message?: any, ...optionalParams: any[]): void {
-            if (this.loggerOptions.minimalLogLevel <= LogLevel.Trace) {
+            if (this.minimalLogLevelNumber() <= 0) {
                 console.log(chalk.blackBright(this.format(LogLevel.Trace, message, optionalParams)));
             }
         }
         debug(message?: any, ...optionalParams: any[]): void {
-            if (this.loggerOptions.minimalLogLevel <= LogLevel.Debug) {
+            if (this.minimalLogLevelNumber() <= 1) {
                 console.log(chalk.grey(this.format(LogLevel.Debug, message, optionalParams)));
             }
         }
         info(message?: any, ...optionalParams: any[]): void {
-            if (this.loggerOptions.minimalLogLevel <= LogLevel.Information) {
+            if (this.minimalLogLevelNumber() <= 2) {
                 console.log(chalk.white(this.format(LogLevel.Information, message, optionalParams)));
             }
         }
         warn(message?: any, ...optionalParams: any[]): void {
-            if (this.loggerOptions.minimalLogLevel <= LogLevel.Warning) {
-                console.log(chalk.bgYellow(this.format(LogLevel.Warning, message, optionalParams)));
+            if (this.minimalLogLevelNumber() <= 3) {
+                console.log(chalk.yellow(this.format(LogLevel.Warning, message, optionalParams)));
             }
         }
         error(message?: any, ...optionalParams: any[]): void {
-            if (this.loggerOptions.minimalLogLevel <= LogLevel.Error) {
-                console.log(chalk.bgRedBright(this.format(LogLevel.Error, message, optionalParams)));
+            if (this.minimalLogLevelNumber() <= 4) {
+                console.log(chalk.redBright(this.format(LogLevel.Error, message, optionalParams)));
             }
         }
         format(logLevel: LogLevel, message: any, optionalParams: any[]): string {
@@ -92,7 +107,7 @@ export namespace Logger {
 
             switch (this.loggerOptions.logFormat) {
                 case LogFormat.Compact:
-                    return `${this.name} - ${buildMessage}`;
+                    return `${buildMessage}`;
                 case LogFormat.Extensive:
                     const date = new Date();
 
