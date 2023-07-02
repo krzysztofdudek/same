@@ -15,6 +15,7 @@ Praesent vitae libero at nunc malesuada fringilla ut at augue. Etiam bibendum co
 ## Import Markdown file
 
 @import(markdown.md)
+@import()
 
 ## Inline PlantUML diagram
 

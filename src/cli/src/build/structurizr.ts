@@ -33,23 +33,24 @@ export namespace StructurizrBuild {
         public constructor(private fileSystem: FileSystem.IFileSystem) {}
 
         async getDependencies(filePath: string, fileContent: string): Promise<string[]> {
+            const dependencies: string[] = [];
+
             const regex = /workspace\s*extends\s*(.*)\s*{/g;
             const matches = fileContent.matchAll(regex);
 
             let match: IteratorResult<RegExpMatchArray, any>;
-            const results: string[] = [];
 
             while ((match = matches.next()).done !== true) {
                 const path = this.fileSystem.clearPath(this.fileSystem.getDirectory(filePath), match.value[1].trim());
 
-                if (results.indexOf(path) !== -1) {
+                if (dependencies.indexOf(path) !== -1) {
                     continue;
                 }
 
-                results.push(path);
+                dependencies.push(path);
             }
 
-            return results;
+            return dependencies;
         }
     }
 
