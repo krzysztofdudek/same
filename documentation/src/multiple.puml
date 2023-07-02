@@ -1,0 +1,7 @@
+@startuml Plantuml diagram
+A -> B
+@enduml
+
+@startuml Plantuml diagram 2
+B -> C
+@enduml

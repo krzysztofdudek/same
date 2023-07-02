@@ -11,6 +11,11 @@ const vsCodeTasksFileContext = `{
       "label": "Serve Documentation",
       "type": "shell",
       "command": "samecli serve"
+    },
+    {
+      "label": "Build",
+      "type": "shell",
+      "command": "samecli build"
     }
   ]
 }
@@ -33,6 +38,24 @@ const vsCodeSettingsFileContent = `{
   "todo-tree.general.statusBar": "tags",
   "extensions.ignoreRecommendations": false,
   "c4.diagram.plantuml.enabled": true
+  "cSpell.words": [
+    "enduml",
+    "plantuml",
+    "puml",
+    "startuml",
+    "startsalt",
+    "endsalt",
+    "startgantt",
+    "endgantt",
+    "startmindmap",
+    "endmindmap",
+    "startwbs",
+    "endwbs",
+    "startjson",
+    "endjson",
+    "startyaml",
+    "endyaml"
+  ]
 }`;
 
 const vsCodeExtensionsFileContent = `{
@@ -63,7 +86,7 @@ const markdownlintFileContent = `{
 `;
 
 const gitIgnoreFileContent = `_tools
-_generated
+_build
 _temp`;
 
 const gitAttributesFileContent = `*.sh            text eol=lf

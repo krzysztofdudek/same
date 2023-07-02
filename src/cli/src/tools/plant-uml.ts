@@ -11,7 +11,8 @@ const toolName = "PlantUml";
 const toolFileName = "plantuml.jar";
 
 export namespace PlantUml {
-    export const toolServiceKey = "PlantUml.Tool";
+    export const iToolServiceKey = "PlantUml.ITool";
+    export const iServerServiceKey = "PlantUml.IServer";
     export const iOptionsServiceKey = "PlantUml.IOptions";
 
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
@@ -24,7 +25,7 @@ export namespace PlantUml {
         );
 
         serviceProvider.registerSingletonMany(
-            [Toolset.iToolServiceKey, toolServiceKey],
+            [Toolset.iToolServiceKey, iToolServiceKey],
             () =>
                 new Tool(
                     serviceProvider.resolve(Toolset.iOptionsServiceKey),
@@ -32,11 +33,22 @@ export namespace PlantUml {
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
                     serviceProvider.resolve(Toolset.iToolsetVersionsServiceKey),
                     serviceProvider.resolve(HttpClient.iHttpClientServiceKey),
-                    serviceProvider.resolve(iOptionsServiceKey),
+                    serviceProvider
+                        .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
+                        .create(iToolServiceKey)
+                )
+        );
+
+        serviceProvider.registerSingleton(
+            iServerServiceKey,
+            () =>
+                new Server(
                     serviceProvider.resolve(Shell.iShellServiceKey),
                     serviceProvider
                         .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
-                        .create(toolServiceKey)
+                        .create(iServerServiceKey),
+                    serviceProvider.resolve(iToolServiceKey),
+                    serviceProvider.resolve(iOptionsServiceKey)
                 )
         );
     }
@@ -45,15 +57,17 @@ export namespace PlantUml {
         serverPort: number;
     }
 
-    export class Tool implements Toolset.ITool {
+    export interface ITool extends Toolset.ITool {
+        getJarPath(): string;
+    }
+
+    export class Tool implements ITool {
         public constructor(
             private toolsOptions: Toolset.IOptions,
             private gitHub: GitHub.IGitHub,
             private fileSystem: FileSystem.IFileSystem,
             private toolsetVersions: Toolset.IToolsetVersions,
             private httpClient: HttpClient.IHttpClient,
-            private options: IOptions,
-            private shell: Shell.IShell,
             private logger: Logger.ILogger
         ) {}
 
@@ -75,11 +89,7 @@ export namespace PlantUml {
             await this.toolsetVersions.setToolVersion(toolName, latestVersionDescriptor.name);
         }
 
-        public createServer(): IServer {
-            return new Server(this.shell, this.logger, this.getJarPath(), this.options.serverPort);
-        }
-
-        getJarPath(): string {
+        public getJarPath(): string {
             return this.fileSystem.clearPath(this.toolsOptions.toolsDirectoryPath, toolFileName);
         }
     }
@@ -96,14 +106,16 @@ export namespace PlantUml {
         constructor(
             private shell: Shell.IShell,
             private logger: Logger.ILogger,
-            private jarPath: string,
-            private port: number
+            private tool: ITool,
+            private options: IOptions
         ) {}
 
         start() {
             this.logger.debug("Starting PlantUML server");
 
-            this.process = this.shell.runProcess(`java -jar "${this.jarPath}" -picoweb:${this.port}`);
+            this.process = this.shell.runProcess(
+                `java -jar "${this.tool.getJarPath()}" -picoweb:${this.options.serverPort}`
+            );
         }
 
         stop() {
@@ -115,7 +127,7 @@ export namespace PlantUml {
         async getSvg(code: string): Promise<string> {
             const zippedCode = encode64(zip_deflate(unescape(encodeURIComponent(code)), 9));
 
-            const response = await fetch(`http://localhost:${this.port}/plantuml/svg/${zippedCode}`);
+            const response = await fetch(`http://localhost:${this.options.serverPort}/plantuml/svg/${zippedCode}`);
 
             return await response.text();
         }

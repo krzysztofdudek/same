@@ -8,7 +8,6 @@ import { Command } from "commander";
 
 // commands
 import { exit } from "process";
-import path from "path";
 import absoluteUnixPath from "./infrastructure/functions/absoluteUnixPath.js";
 import { Bootstrapper } from "./bootstrapper.js";
 import { InitializeCommand } from "./commands/initialize.js";
@@ -18,6 +17,9 @@ import { FileSystem } from "./infrastructure/file-system.js";
 
 const loggerOptions = Bootstrapper.serviceProvider.resolve<Logger.IOptions>(Logger.iOptionsServiceKey);
 const fileSystem = Bootstrapper.serviceProvider.resolve<FileSystem.IFileSystem>(FileSystem.iFileSystemServiceKey);
+const logger = Bootstrapper.serviceProvider
+    .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
+    .create("Host");
 
 export const version = "1.0.0-alpha.7";
 
@@ -57,11 +59,13 @@ program
                 sourceDirectoryPath: absoluteUnixPath(workingDirectory, args.sourceDirectory),
                 toolsDirectoryPath: absoluteUnixPath(workingDirectory, args.toolsDirectory),
             })
-            .catch((error) => {
-                console.log(error);
+            .then(() => {
+                exit(0);
             })
-            .finally(() => {
-                exit();
+            .catch((error) => {
+                logger.error(error);
+
+                exit(1);
             });
     });
 
@@ -75,7 +79,7 @@ program
     .option("--working-directory <path>", "working directory path", `${currentWorkingDirectory}`)
     .option("--source-directory <name>", "source directory name", `src`)
     .option("--tools-directory <name>", "tools directory name", `_tools`)
-    .option("--output-directory <name>", "output directory name", `_generated`)
+    .option("--output-directory <name>", "output directory name", `_build`)
     .option(
         "--minimal-log-level <level>",
         "minimal log level (Trace, Debug, Information, Warning, Error)",
@@ -103,11 +107,13 @@ program
                 toolsDirectoryPath: absoluteUnixPath(workingDirectory, args.toolsDirectory),
                 outputDirectoryPath: absoluteUnixPath(workingDirectory, args.outputDirectory),
             })
-            .catch((error) => {
-                console.log(error);
+            .then(() => {
+                exit(0);
             })
-            .finally(() => {
-                exit();
+            .catch((error) => {
+                logger.error(error);
+
+                exit(1);
             });
     });
 
@@ -121,7 +127,7 @@ program
 //     .option("--working-directory <path>", "working directory path", `${currentWorkingDirectory}`)
 //     .option("--source-directory <name>", "source directory name", `src`)
 //     .option("--tools-directory <name>", "tools directory name", `_tools`)
-//     .option("--output-directory <name>", "output directory name", `_generated`)
+//     .option("--output-directory <name>", "output directory name", `_build`)
 //     .action((args) => {
 //         const workingDirectory = path.resolve(args.workingDirectory.replace(currentWorkingDirectory, process.cwd()));
 

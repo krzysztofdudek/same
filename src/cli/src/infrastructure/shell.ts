@@ -17,6 +17,7 @@ export namespace Shell {
 
     export interface IProcess {
         kill(): void;
+        isRunning(): boolean;
     }
 
     export interface IShell {
@@ -27,6 +28,10 @@ export namespace Shell {
 
     export class Process implements IProcess {
         public constructor(private process: ChildProcess) {}
+
+        isRunning(): boolean {
+            return this.process.exitCode !== undefined;
+        }
 
         kill(): void {
             this.process.kill();

@@ -5,7 +5,7 @@ workspace extends example.dsl {
       autolayout lr
     }
 
-    container softwareSystem {
+    container softwareSystem DiagramKey {
       include *
       autolayout lr
     }

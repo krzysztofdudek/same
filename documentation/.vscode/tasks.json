@@ -2,9 +2,14 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Serve Documentation",
+      "label": "Serve",
       "type": "shell",
       "command": "samecli serve"
+    },
+    {
+      "label": "Build",
+      "type": "shell",
+      "command": "samecli build"
     }
   ]
 }

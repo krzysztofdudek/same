@@ -84,8 +84,8 @@ export namespace Build {
     }
 
     export interface IBuilder {
-        buildAll(): Promise<void>;
-        build(filePath: string): Promise<void>;
+        buildAll(): Promise<boolean>;
+        build(filePath: string): Promise<boolean>;
     }
 
     export interface IFileBuilder {
@@ -101,7 +101,7 @@ export namespace Build {
     }
 
     export enum AnalysisResultType {
-        Information,
+        Suggestion,
         Warning,
         Error,
     }
@@ -140,6 +140,7 @@ export namespace Build {
     class FileToBuild {
         public constructor(
             private _path: string,
+            private _compactPath: string,
             private _extension: string,
             private _dependencies: string[],
             private _hash: string,
@@ -148,6 +149,10 @@ export namespace Build {
 
         public get path() {
             return this._path;
+        }
+
+        public get compactPath() {
+            return this._compactPath;
         }
 
         public get extension() {
@@ -236,7 +241,9 @@ export namespace Build {
 
             const hash = createHash("sha512").update(fileContent, "utf-8").digest("base64");
 
-            this.updateFileInformation(new FileToBuild(filePath, fileExtension, dependencies, hash, analysisResults));
+            this.updateFileInformation(
+                new FileToBuild(filePath, compactFilePath, fileExtension, dependencies, hash, analysisResults)
+            );
         }
 
         private async analyzeFile(fileExtension: string, filePath: string, fileContent: string) {
@@ -284,8 +291,10 @@ export namespace Build {
         private printAnalysisResults(analysisResults: AnalysisResult[], compactFilePath: string) {
             analysisResults.forEach((analysisResult) => {
                 const hasLocation = analysisResult.line !== null || analysisResult.column != null;
-                const message = `"${compactFilePath}" > ${
-                    hasLocation ? `${analysisResult.line ?? "-"}:${analysisResult.column ?? "-"} > ` : ""
+                const message = `${AnalysisResultType[analysisResult.type]} ${
+                    analysisResult.type === AnalysisResultType.Error ? "in" : "for"
+                } ${compactFilePath}: ${
+                    hasLocation ? `[${analysisResult.line ?? "-"}:${analysisResult.column ?? "-"}] ` : ""
                 }${analysisResult.message}`;
 
                 switch (analysisResult.type) {
@@ -295,7 +304,7 @@ export namespace Build {
                     case AnalysisResultType.Warning:
                         this.logger.warn(message);
                         break;
-                    case AnalysisResultType.Information:
+                    case AnalysisResultType.Suggestion:
                         this.logger.warn(message);
                 }
             });
@@ -309,7 +318,7 @@ export namespace Build {
                     analysisResults.push(
                         new AnalysisResult(
                             AnalysisResultType.Error,
-                            `Detected not existing dependency "${this.compactPath(dependency)}"`
+                            `Dependency does not exist: ${this.compactPath(dependency)}`
                         )
                     );
                 }
@@ -351,7 +360,7 @@ export namespace Build {
             private logger: Logger.ILogger
         ) {}
 
-        async buildAll(): Promise<void> {
+        async buildAll(): Promise<boolean> {
             this.logger.info("Running complete build");
 
             await this.context.runCompleteAnalysis();
@@ -365,20 +374,30 @@ export namespace Build {
             if (wereDetectedErrors) {
                 this.logger.info("Build failed");
 
-                return;
+                return false;
             }
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
 
-                await this.buildInternal(file);
+                try {
+                    await this.buildInternal(file);
+                } catch {
+                    this.logger.info("Build failed");
+
+                    return false;
+                }
             }
 
             this.logger.info("Build succeeded");
+
+            return true;
         }
 
-        async build(filePath: string): Promise<void> {
+        async build(filePath: string): Promise<boolean> {
             const file = await this.context.runAnalysis(filePath);
+
+            return true;
         }
 
         async buildInternal(file: FileToBuild): Promise<void> {
@@ -388,6 +407,8 @@ export namespace Build {
 
             for (let j = 0; j < fileBuilders.length; j++) {
                 const fileBuilder = fileBuilders[j];
+
+                this.logger.info(`Building: ${file.compactPath}`);
 
                 await fileBuilder.build(file.path);
             }

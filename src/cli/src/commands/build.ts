@@ -18,7 +18,7 @@ export namespace BuildCommand {
                     serviceProvider.resolve(Build.iOptionsServiceKey),
                     serviceProvider.resolve(PlantUml.iOptionsServiceKey),
                     serviceProvider.resolve(Toolset.iToolsetServiceKey),
-                    serviceProvider.resolve(PlantUml.toolServiceKey),
+                    serviceProvider.resolve(PlantUml.iServerServiceKey),
                     serviceProvider.resolve(Build.iBuilderServiceKey)
                 )
         );
@@ -44,7 +44,7 @@ export namespace BuildCommand {
             private buildOptions: Build.IOptions,
             private plantUmlOptions: PlantUml.IOptions,
             private toolset: Toolset.IToolset,
-            private plantUmlTool: PlantUml.Tool,
+            private plantUmlServer: PlantUml.IServer,
             private builder: Build.IBuilder
         ) {}
 
@@ -61,13 +61,12 @@ export namespace BuildCommand {
                 return;
             }
 
-            const plantUmlServer = this.plantUmlTool.createServer();
-            plantUmlServer.start();
+            this.plantUmlServer.start();
 
             try {
                 await this.builder.buildAll();
             } finally {
-                plantUmlServer.stop();
+                this.plantUmlServer.stop();
             }
         }
     }

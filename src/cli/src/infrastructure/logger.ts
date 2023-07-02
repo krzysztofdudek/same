@@ -99,7 +99,7 @@ export namespace Logger {
         }
         error(message?: any, ...optionalParams: any[]): void {
             if (this.minimalLogLevelNumber() <= 4) {
-                console.log(chalk.redBright(this.format(LogLevel.Error, message, optionalParams)));
+                console.error(chalk.redBright(this.format(LogLevel.Error, message, optionalParams)));
             }
         }
         format(logLevel: LogLevel, message: any, optionalParams: any[]): string {

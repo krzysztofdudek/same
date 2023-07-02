@@ -1,5 +1,6 @@
 import { GitHub } from "../core/github.js";
 import { Toolset } from "../core/toolset.js";
+import { Awaiter } from "../infrastructure/awaiter.js";
 import { FileSystem } from "../infrastructure/file-system.js";
 import { HttpClient } from "../infrastructure/http-client.js";
 import { Logger } from "../infrastructure/logger.js";
@@ -26,7 +27,8 @@ export namespace Structurizr {
                     serviceProvider
                         .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
                         .create(toolServiceKey),
-                    serviceProvider.resolve(Shell.iShellServiceKey)
+                    serviceProvider.resolve(Shell.iShellServiceKey),
+                    serviceProvider.resolve(Awaiter.iAwaiterServiceKey)
                 )
         );
     }
@@ -43,7 +45,8 @@ export namespace Structurizr {
             private toolsetVersions: Toolset.IToolsetVersions,
             private httpClient: HttpClient.IHttpClient,
             private logger: Logger.ILogger,
-            private shell: Shell.IShell
+            private shell: Shell.IShell,
+            private awaiter: Awaiter.IAwaiter
         ) {}
 
         async configure() {
@@ -86,12 +89,14 @@ export namespace Structurizr {
                 .clearPath(this.toolsOptions.toolsDirectoryPath, decompressedDirectory, "lib")
                 .replaceAll(/\\/g, "/");
 
-            const result = await this.shell.executeCommand(
+            const commandExecutionResult = await this.shell.executeCommand(
                 `java -cp "${jarPath}/*" com.structurizr.cli.StructurizrCliApplication export -workspace "${filePath}" -format plantuml/c4plantuml -output "${outputDirectoryPath}"`
             );
 
-            if (result.stderr.trim().length > 0) {
-                this.logger.error(result.stderr);
+            if (commandExecutionResult.stderr.length > 0) {
+                this.logger.error(`Structurizr: ${commandExecutionResult.stderr}`);
+
+                throw new Error();
             }
         }
     }
