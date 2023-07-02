@@ -55,7 +55,7 @@ export namespace PlantUmlBuild {
                 const endIndex = fileContent.indexOf(endumlString, position);
                 position = endIndex + endumlString.length;
 
-                this.logger.debug(`Rendering ${i} diagram`);
+                this.logger.debug(`Rendering diagram: ${i}`);
 
                 const svg = await this.plantUmlServer.getSvg(fileContent.substring(startIndex, position));
 

@@ -85,7 +85,7 @@ export namespace StructurizrBuild {
 
                 const fileContent = await this.fileSystem.readFile(filePath);
 
-                this.logger.debug(`Rendering ${diagramName} diagram`);
+                this.logger.debug(`Rendering diagram: ${diagramName}`);
 
                 const svg = await this.plantUmlServer.getSvg(fileContent);
 
