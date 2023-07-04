@@ -15,7 +15,6 @@ Praesent vitae libero at nunc malesuada fringilla ut at augue. Etiam bibendum co
 ## Import Markdown file
 
 @import(markdown.md)
-@import()
 
 ## Inline PlantUML diagram
 
@@ -27,7 +26,9 @@ Y -> Z
 
 ## Valid link
 
-[Link](markdown.md)
+     [Link](markdown.m)
+
+[Link](https://www.onet.pl)
 
 ## Invalid link
 

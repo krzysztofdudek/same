@@ -291,11 +291,9 @@ export namespace Build {
         private printAnalysisResults(analysisResults: AnalysisResult[], compactFilePath: string) {
             analysisResults.forEach((analysisResult) => {
                 const hasLocation = analysisResult.line !== null || analysisResult.column != null;
-                const message = `${AnalysisResultType[analysisResult.type]} ${
-                    analysisResult.type === AnalysisResultType.Error ? "in" : "for"
-                } ${compactFilePath}: ${
-                    hasLocation ? `[${analysisResult.line ?? "-"}:${analysisResult.column ?? "-"}] ` : ""
-                }${analysisResult.message}`;
+                const message = `${AnalysisResultType[analysisResult.type]} at ${compactFilePath}${
+                    hasLocation ? `[${analysisResult.line ?? "-"}:${analysisResult.column ?? "-"}]` : ""
+                }: ${analysisResult.message}`;
 
                 switch (analysisResult.type) {
                     case AnalysisResultType.Error:
