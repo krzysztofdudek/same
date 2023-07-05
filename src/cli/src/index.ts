@@ -21,7 +21,7 @@ const logger = Bootstrapper.serviceProvider
     .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
     .create("Host");
 
-export const version = "1.0.0-alpha.7";
+export const version = "1.0.0-alpha.8";
 
 console.log(figlet.textSync(`SAME CLI`));
 
@@ -71,7 +71,8 @@ program
 
 program
     .command("build")
-    .description("builds html static files")
+    .description("builds source files")
+    .requiredOption("--output-type <type>", "build output type (html)", undefined)
     .option("--host-name <name>", "host name", "localhost")
     .option("--host-port <port>", "host port", "8080")
     .option("--host-protocol <protocol>", "host protocol", "http")
@@ -98,6 +99,7 @@ program
 
         command
             .execute({
+                outputType: args.outputType,
                 hostName: args.hostName,
                 hostPort: args.hostPort,
                 hostProtocol: args.hostProtocol,

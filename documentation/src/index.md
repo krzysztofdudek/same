@@ -6,11 +6,11 @@ Praesent vitae libero at nunc malesuada fringilla ut at augue. Etiam bibendum co
 
 ## Import Structurizr diagram
 
-@import(example.dsl, DiagramKey)
+@structurizr(example.dsl, DiagramKey)
 
 ## Import PlantUML diagram from file with one diagram
 
-@import(single.puml)
+@plantuml(single.puml)
 
 ## Import Markdown file
 
@@ -34,4 +34,4 @@ Y -> Z
 
 ## C# code
 
-@code(HelloWorld.cs)
+@code(HelloWorld.cs, csharp)

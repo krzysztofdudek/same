@@ -2,6 +2,7 @@ import { ServiceProvider } from "../infrastructure/service-provider.js";
 import { FileSystem } from "../infrastructure/file-system.js";
 import { createHash } from "crypto";
 import { Logger } from "../infrastructure/logger.js";
+import { relative } from "path";
 
 export namespace Build {
     export const iOptionsServiceKey = "Build.IOptions";
@@ -85,20 +86,35 @@ export namespace Build {
     }
 
     export interface IBuilder {
-        buildAll(): Promise<boolean>;
-        build(filePath: string): Promise<boolean>;
+        buildAll(outputType: string): Promise<boolean>;
+        build(filePath: string, outputType: string): Promise<boolean>;
+    }
+
+    export class FileBuildContext {
+        public constructor(private _path: string, private _relativePath: string, private _content: string) {}
+
+        public get path() {
+            return this._path;
+        }
+        public get relativePath() {
+            return this._relativePath;
+        }
+        public get content() {
+            return this._content;
+        }
     }
 
     export interface IFileBuilder {
         fileExtensions: string[];
+        outputType: string;
 
-        build(filePath: string, fileContent: string): Promise<void>;
+        build(context: FileBuildContext): Promise<void>;
     }
 
     export interface IFileDependencyIntrospector {
         fileExtensions: string[];
 
-        getDependencies(filePath: string, fileContent: string): Promise<string[]>;
+        getDependencies(path: string, relativePath: string, content: string): Promise<string[]>;
     }
 
     export enum AnalysisResultType {
@@ -118,15 +134,12 @@ export namespace Build {
         public get type() {
             return this._type;
         }
-
         public get line() {
             return this._line || null;
         }
-
         public get column() {
             return this._column || null;
         }
-
         public get message() {
             return this._message;
         }
@@ -135,7 +148,7 @@ export namespace Build {
     export interface IFileAnalyzer {
         fileExtensions: string[];
 
-        getAnalysisResults(filePath: string, fileContent: string): Promise<AnalysisResult[]>;
+        getAnalysisResults(path: string, relativePath: string, content: string): Promise<AnalysisResult[]>;
     }
 
     class FileToBuild {
@@ -151,23 +164,18 @@ export namespace Build {
         public get path() {
             return this._path;
         }
-
         public get compactPath() {
             return this._compactPath;
         }
-
         public get extension() {
             return this._extension;
         }
-
         public get dependencies() {
             return [...this._dependencies];
         }
-
         public get hash() {
             return this._hash;
         }
-
         public get analysisResults() {
             return [...this._analysisResults];
         }
@@ -247,15 +255,16 @@ export namespace Build {
             );
         }
 
-        private async analyzeFile(fileExtension: string, filePath: string, fileContent: string) {
+        private async analyzeFile(fileExtension: string, path: string, content: string) {
             const analysisResults: AnalysisResult[] = [];
             const fileAnalyzers = this.fileAnalyzers.filter(
                 (x) => x.fileExtensions.findIndex((y) => y === fileExtension) > -1
             );
+            const relativePath = path.substring(this.options.sourceDirectoryPath.length + 1);
 
             for (let j = 0; j < fileAnalyzers.length; j++) {
                 const fileAnalyzer = fileAnalyzers[j];
-                const foundAnalysisResults = await fileAnalyzer.getAnalysisResults(filePath, fileContent);
+                const foundAnalysisResults = await fileAnalyzer.getAnalysisResults(path, relativePath, content);
 
                 analysisResults.push(...foundAnalysisResults);
             }
@@ -263,19 +272,16 @@ export namespace Build {
             return analysisResults;
         }
 
-        private async analyzeDependencies(
-            fileExtension: string,
-            filePath: string,
-            fileContent: string
-        ): Promise<string[]> {
+        private async analyzeDependencies(fileExtension: string, path: string, content: string): Promise<string[]> {
             const dependencyFinders = this.dependencyFinders.filter(
                 (x) => x.fileExtensions.findIndex((y) => y === fileExtension) > -1
             );
             const dependencies: string[] = [];
+            const relativePath = path.substring(this.options.sourceDirectoryPath.length + 1);
 
             for (let j = 0; j < dependencyFinders.length; j++) {
                 const dependencyFinder = dependencyFinders[j];
-                const foundDependencies = await dependencyFinder.getDependencies(filePath, fileContent);
+                const foundDependencies = await dependencyFinder.getDependencies(path, relativePath, content);
 
                 foundDependencies.forEach((dependency) => {
                     const compactDependency = this.compactPath(dependency);
@@ -360,7 +366,7 @@ export namespace Build {
             private fileSystem: FileSystem.IFileSystem
         ) {}
 
-        async buildAll(): Promise<boolean> {
+        async buildAll(outputType: string): Promise<boolean> {
             this.logger.info("Running complete build");
 
             await this.context.runCompleteAnalysis();
@@ -381,9 +387,10 @@ export namespace Build {
                 const file = files[i];
 
                 try {
-                    await this.buildInternal(file);
-                } catch {
+                    await this.buildInternal(file, outputType);
+                } catch (error) {
                     this.logger.info("Build failed");
+                    this.logger.error(error);
 
                     return false;
                 }
@@ -394,16 +401,17 @@ export namespace Build {
             return true;
         }
 
-        async build(filePath: string): Promise<boolean> {
+        async build(filePath: string, outputType: string): Promise<boolean> {
             const file = await this.context.runAnalysis(filePath);
 
             return true;
         }
 
-        async buildInternal(file: FileToBuild): Promise<void> {
+        async buildInternal(file: FileToBuild, outputType: string): Promise<void> {
             const fileBuilders = this.fileBuilders.filter(
-                (x) => x.fileExtensions.findIndex((y) => y === file.extension) > -1
+                (x) => x.fileExtensions.findIndex((y) => y === file.extension) > -1 && x.outputType === outputType
             );
+            const relativePath = file.path.substring(this.options.sourceDirectoryPath.length + 1);
 
             for (let j = 0; j < fileBuilders.length; j++) {
                 const fileBuilder = fileBuilders[j];
@@ -412,7 +420,7 @@ export namespace Build {
 
                 const fileContent = await this.fileSystem.readFile(file.path);
 
-                await fileBuilder.build(file.path, fileContent);
+                await fileBuilder.build(new FileBuildContext(file.path, relativePath, fileContent));
             }
         }
 

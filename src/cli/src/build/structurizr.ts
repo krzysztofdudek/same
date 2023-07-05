@@ -32,7 +32,7 @@ export namespace StructurizrBuild {
 
         public constructor(private fileSystem: FileSystem.IFileSystem) {}
 
-        async getDependencies(filePath: string, fileContent: string): Promise<string[]> {
+        async getDependencies(filePath: string, relativePath: string, fileContent: string): Promise<string[]> {
             const dependencies: string[] = [];
 
             const regex = /workspace\s*extends\s*(.*)\s*{/g;
@@ -56,6 +56,7 @@ export namespace StructurizrBuild {
 
     export class FileBuilder implements Build.IFileBuilder {
         fileExtensions: string[] = ["dsl"];
+        outputType = "html";
 
         public constructor(
             private structurizrTool: Structurizr.ITool,
@@ -65,17 +66,17 @@ export namespace StructurizrBuild {
             private logger: Logger.ILogger
         ) {}
 
-        async build(filePath: string): Promise<void> {
+        async build(context: Build.FileBuildContext): Promise<void> {
             const outputDirectoryPath = this.fileSystem.clearPath(
                 this.buildOptions.outputDirectoryPath,
-                filePath.substring(this.buildOptions.sourceDirectoryPath.length + 1)
+                context.relativePath
             );
 
             await this.fileSystem.delete(outputDirectoryPath);
 
             this.logger.trace("Rendering PlantUML diagrams with Structurizr CLI");
 
-            await this.structurizrTool.generateDiagrams(filePath, outputDirectoryPath);
+            await this.structurizrTool.generateDiagrams(context.path, outputDirectoryPath);
 
             const resultFiles = await this.fileSystem.getFilesRecursively(outputDirectoryPath);
 

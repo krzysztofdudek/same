@@ -25,6 +25,7 @@ export namespace BuildCommand {
     }
 
     export interface IOptions {
+        outputType: string;
         hostName: string;
         hostPort: number;
         hostProtocol: string;
@@ -64,7 +65,7 @@ export namespace BuildCommand {
             this.plantUmlServer.start();
 
             try {
-                await this.builder.buildAll();
+                await this.builder.buildAll(options.outputType);
             } finally {
                 this.plantUmlServer.stop();
             }

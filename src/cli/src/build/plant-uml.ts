@@ -25,6 +25,7 @@ export namespace PlantUmlBuild {
 
     export class FileBuilder implements Build.IFileBuilder {
         fileExtensions: string[] = ["puml", "plantuml"];
+        outputType = "html";
 
         public constructor(
             private plantUmlServer: PlantUml.Server,
@@ -33,31 +34,30 @@ export namespace PlantUmlBuild {
             private logger: Logger.ILogger
         ) {}
 
-        async build(filePath: string): Promise<void> {
-            const fileContent = await this.fileSystem.readFile(filePath);
+        async build(context: Build.FileBuildContext): Promise<void> {
             let position = 0;
 
             const outputDirectoryPath = this.fileSystem.clearPath(
                 this.buildOptions.outputDirectoryPath,
-                filePath.substring(this.buildOptions.sourceDirectoryPath.length + 1)
+                context.relativePath
             );
 
             await this.fileSystem.delete(outputDirectoryPath);
             await this.fileSystem.createDirectory(outputDirectoryPath);
 
             for (let i = 1; ; i++) {
-                const startIndex = fileContent.indexOf(startumlString, position);
+                const startIndex = context.content.indexOf(startumlString, position);
 
                 if (startIndex === -1) {
                     break;
                 }
 
-                const endIndex = fileContent.indexOf(endumlString, position);
+                const endIndex = context.content.indexOf(endumlString, position);
                 position = endIndex + endumlString.length;
 
                 this.logger.debug(`Rendering diagram: ${i}`);
 
-                const svg = await this.plantUmlServer.getSvg(fileContent.substring(startIndex, position));
+                const svg = await this.plantUmlServer.getSvg(context.content.substring(startIndex, position));
 
                 const outputFilePath = this.fileSystem.clearPath(outputDirectoryPath, `${i}.svg`);
 
