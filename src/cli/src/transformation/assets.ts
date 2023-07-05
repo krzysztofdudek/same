@@ -21,7 +21,7 @@ client.addEventListener('message', message => {
     export async function saveCss(outputDirectoryPath: string) {
         await fsPromises.writeFile(
             path.join(outputDirectoryPath, "styles.css"),
-            `/* @media (prefers-color-scheme: dark) {
+            `@media (prefers-color-scheme: dark) {
     .markdown-body {
       color-scheme: dark;
       --color-prettylights-syntax-comment: #8b949e;
@@ -115,7 +115,7 @@ client.addEventListener('message', message => {
       --color-attention-subtle: #fff8c5;
       --color-danger-fg: #cf222e;
     }
-  /* } */
+  }
 
   .markdown-body {
     -ms-text-size-adjust: 100%;
@@ -1124,7 +1124,7 @@ client.addEventListener('message', message => {
     filter: invert(50%);
   }
 
-  .markdown-body img {
+  .markdown-body svg {
       background-color: white;
   }`,
             {

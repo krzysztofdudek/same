@@ -26,8 +26,6 @@ Y -> Z
 
 ## Valid link
 
-     [Link](markdown.m)
-
 [Link](https://www.onet.pl)
 
 ## Invalid link

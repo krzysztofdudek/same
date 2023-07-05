@@ -45,7 +45,8 @@ export namespace Build {
                     serviceProvider.resolveMany(iFileBuilderServiceKey),
                     serviceProvider
                         .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
-                        .create(iBuilderServiceKey)
+                        .create(iBuilderServiceKey),
+                    serviceProvider.resolve(FileSystem.iFileSystemServiceKey)
                 )
         );
     }
@@ -91,7 +92,7 @@ export namespace Build {
     export interface IFileBuilder {
         fileExtensions: string[];
 
-        build(filePath: string): Promise<void>;
+        build(filePath: string, fileContent: string): Promise<void>;
     }
 
     export interface IFileDependencyIntrospector {
@@ -355,7 +356,8 @@ export namespace Build {
             private context: IContext,
             private options: IOptions,
             private fileBuilders: IFileBuilder[],
-            private logger: Logger.ILogger
+            private logger: Logger.ILogger,
+            private fileSystem: FileSystem.IFileSystem
         ) {}
 
         async buildAll(): Promise<boolean> {
@@ -408,7 +410,9 @@ export namespace Build {
 
                 this.logger.info(`Building: ${file.compactPath}`);
 
-                await fileBuilder.build(file.path);
+                const fileContent = await this.fileSystem.readFile(file.path);
+
+                await fileBuilder.build(file.path, fileContent);
             }
         }
 
