@@ -3,9 +3,11 @@ import { Build } from "../../core/build.js";
 import { FileSystem } from "../../infrastructure/file-system.js";
 import { MarkdownBuild } from "../markdown.js";
 
+const functionName = "import";
+
 export namespace ImportFunction {
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
-        Build.registerFileAnalyzer(serviceProvider, () => new FunctionAnalyzer());
+        Build.registerFileAnalyzer(serviceProvider, () => new FileAnalyzer());
 
         Build.registerFileDependencyIntrospector(
             serviceProvider,
@@ -18,7 +20,7 @@ export namespace ImportFunction {
         );
     }
 
-    export class FunctionAnalyzer implements Build.IFileAnalyzer {
+    export class FileAnalyzer implements Build.IFileAnalyzer {
         fileExtensions: string[] = ["md"];
 
         async getAnalysisResults(
@@ -28,31 +30,35 @@ export namespace ImportFunction {
         ): Promise<Build.AnalysisResult[]> {
             const analysisResults: Build.AnalysisResult[] = [];
 
-            await MarkdownBuild.handleFunctions(content, async (functionName, parameters, line, column) => {
-                if (functionName === "import") {
-                    if (parameters.length === 0 || parameters[0].length === 0) {
+            const functions = MarkdownBuild.matchAllFunctions(content);
+
+            for (let i = 0; i < functions.length; i++) {
+                const _function = functions[i];
+
+                if (_function.functionName === functionName) {
+                    if (_function.parameters.length === 0 || _function.parameters[0].length === 0) {
                         analysisResults.push(
                             new Build.AnalysisResult(
                                 Build.AnalysisResultType.Error,
                                 "Import function requires first parameter specifying file path parameter.",
-                                line,
-                                column
+                                _function.line,
+                                _function.column
                             )
                         );
                     }
 
-                    if (parameters[0].endsWith(".dsl") && parameters.length !== 2) {
+                    if (_function.parameters[0].endsWith(".dsl") && _function.parameters.length !== 2) {
                         analysisResults.push(
                             new Build.AnalysisResult(
                                 Build.AnalysisResultType.Error,
                                 'Import function of "dsl" file requires second parameters specified with diagram name.',
-                                line,
-                                column
+                                _function.line,
+                                _function.column
                             )
                         );
                     }
                 }
-            });
+            }
 
             return analysisResults;
         }
@@ -66,24 +72,31 @@ export namespace ImportFunction {
         async getDependencies(path: string, _relativePath: string, content: string): Promise<string[]> {
             const dependencies: string[] = [];
 
-            await MarkdownBuild.handleFunctions(content, async (functionName, parameters) => {
-                if (functionName === "import") {
-                    const dependency = this.fileSystem.clearPath(this.fileSystem.getDirectory(path), parameters[0]);
+            const functions = MarkdownBuild.matchAllFunctions(content);
+
+            for (let i = 0; i < functions.length; i++) {
+                const _function = functions[i];
+
+                if (_function.functionName === functionName) {
+                    const dependency = this.fileSystem.clearPath(
+                        this.fileSystem.getDirectory(path),
+                        _function.parameters[0]
+                    );
 
                     if (dependencies.indexOf(dependency) !== -1) {
-                        return;
+                        continue;
                     }
 
                     dependencies.push(dependency);
                 }
-            });
+            }
 
             return dependencies;
         }
     }
 
     export class FunctionExecutor implements MarkdownBuild.IFunctionExecutor {
-        functionName: string = "import";
+        functionName: string = functionName;
 
         public constructor(private fileSystem: FileSystem.IFileSystem) {}
 

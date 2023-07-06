@@ -6,7 +6,7 @@ Praesent vitae libero at nunc malesuada fringilla ut at augue. Etiam bibendum co
 
 ## Import Structurizr diagram
 
-@import(example.dsl, DiagramKey)
+@structurizr(extension.dsl, DiagramKey)
 
 ## Import PlantUML diagram from file with one diagram
 
@@ -14,7 +14,7 @@ Praesent vitae libero at nunc malesuada fringilla ut at augue. Etiam bibendum co
 
 ## Import Markdown file
 
-@import(markdown.md)
+@markdown(markdown.md)
 
 ## Inline PlantUML diagram
 

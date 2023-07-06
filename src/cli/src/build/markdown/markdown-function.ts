@@ -1,11 +1,11 @@
-import { Build } from "../../core/build.js";
 import { ServiceProvider } from "../../infrastructure/service-provider.js";
+import { Build } from "../../core/build.js";
 import { FileSystem } from "../../infrastructure/file-system.js";
 import { MarkdownBuild } from "../markdown.js";
 
-const functionName = "plantuml";
+const functionName = "markdown";
 
-export namespace PlantUmlFunction {
+export namespace MarkdownFunction {
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
         Build.registerFileAnalyzer(serviceProvider, () => new FileAnalyzer());
 
@@ -39,12 +39,12 @@ export namespace PlantUmlFunction {
             for (let i = 0; i < functions.length; i++) {
                 const _function = functions[i];
 
-                if (_function.functionName == functionName) {
+                if (_function.functionName === functionName) {
                     if (_function.parameters.length === 0 || _function.parameters[0].length === 0) {
                         analysisResults.push(
                             new Build.AnalysisResult(
                                 Build.AnalysisResultType.Error,
-                                "Plantuml function requires first parameter specifying file path parameter.",
+                                "Markdown function requires first parameter specifying file path parameter.",
                                 _function.line,
                                 _function.column
                             )
@@ -94,13 +94,17 @@ export namespace PlantUmlFunction {
         public constructor(private fileSystem: FileSystem.IFileSystem, private buildOptions: Build.IOptions) {}
 
         async execute(executionContext: MarkdownBuild.FunctionExecutionContext): Promise<string> {
+            const fileExtension = this.fileSystem.getExtension(executionContext.filePath);
+
             const filePath = this.fileSystem.clearPath(
                 this.buildOptions.outputDirectoryPath,
                 this.fileSystem
                     .getDirectory(executionContext.filePath)
                     .substring(this.buildOptions.sourceDirectoryPath.length + 1),
-                executionContext.parameters[0],
-                `${executionContext.parameters.length > 1 ? executionContext.parameters[1] : "1"}.svg`
+                `${executionContext.parameters[0].substring(
+                    0,
+                    executionContext.parameters[0].length - fileExtension.length
+                )}html`
             );
 
             const fileContent = await this.fileSystem.readFile(filePath);

@@ -7,6 +7,8 @@ import { CodeFunction } from "./markdown/code-function.js";
 import { ImportFunction } from "./markdown/import-function.js";
 import { UnknownFunctionsAnalyzer } from "./markdown/unknown-functions-analyzer.js";
 import { PlantUmlFunction } from "./markdown/plantuml-function.js";
+import { StructurizrFunction } from "./markdown/structurizr-function.js";
+import { MarkdownFunction } from "./markdown/markdown-function.js";
 
 export namespace MarkdownBuild {
     export const iFunctionExecutorServiceKey = "MarkdownBuild.IFunctionExecutor";
@@ -38,6 +40,8 @@ export namespace MarkdownBuild {
         CodeFunction.register(serviceProvider);
         ImportFunction.register(serviceProvider);
         PlantUmlFunction.register(serviceProvider);
+        StructurizrFunction.register(serviceProvider);
+        MarkdownFunction.register(serviceProvider);
     }
 
     export function registerFunctionExecutor(

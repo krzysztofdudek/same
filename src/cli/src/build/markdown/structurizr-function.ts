@@ -3,9 +3,9 @@ import { ServiceProvider } from "../../infrastructure/service-provider.js";
 import { FileSystem } from "../../infrastructure/file-system.js";
 import { MarkdownBuild } from "../markdown.js";
 
-const functionName = "plantuml";
+const functionName = "structurizr";
 
-export namespace PlantUmlFunction {
+export namespace StructurizrFunction {
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
         Build.registerFileAnalyzer(serviceProvider, () => new FileAnalyzer());
 
@@ -44,7 +44,16 @@ export namespace PlantUmlFunction {
                         analysisResults.push(
                             new Build.AnalysisResult(
                                 Build.AnalysisResultType.Error,
-                                "Plantuml function requires first parameter specifying file path parameter.",
+                                "Structurizr function requires first parameter specifying file path parameter.",
+                                _function.line,
+                                _function.column
+                            )
+                        );
+                    } else if (_function.parameters.length < 2 || _function.parameters[1].length === 0) {
+                        analysisResults.push(
+                            new Build.AnalysisResult(
+                                Build.AnalysisResultType.Error,
+                                "Structurizr function requires second parameter specifying view name.",
                                 _function.line,
                                 _function.column
                             )
@@ -100,7 +109,7 @@ export namespace PlantUmlFunction {
                     .getDirectory(executionContext.filePath)
                     .substring(this.buildOptions.sourceDirectoryPath.length + 1),
                 executionContext.parameters[0],
-                `${executionContext.parameters.length > 1 ? executionContext.parameters[1] : "1"}.svg`
+                `${executionContext.parameters[1]}.svg`
             );
 
             const fileContent = await this.fileSystem.readFile(filePath);

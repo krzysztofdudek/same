@@ -3,6 +3,8 @@ import { Build } from "../../core/build.js";
 import { FileSystem } from "../../infrastructure/file-system.js";
 import { MarkdownBuild } from "../markdown.js";
 
+const functionName = "code";
+
 export namespace CodeFunction {
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
         Build.registerFileAnalyzer(serviceProvider, () => new FileAnalyzer());
@@ -28,29 +30,33 @@ export namespace CodeFunction {
         ): Promise<Build.AnalysisResult[]> {
             const analysisResults: Build.AnalysisResult[] = [];
 
-            await MarkdownBuild.handleFunctions(content, async (functionName, parameters, line, column) => {
-                if (functionName === "code") {
-                    if (parameters.length === 0 || parameters[0].length === 0) {
+            const functions = MarkdownBuild.matchAllFunctions(content);
+
+            for (let i = 0; i < functions.length; i++) {
+                const _function = functions[i];
+
+                if (_function.functionName === functionName) {
+                    if (_function.parameters.length === 0 || _function.parameters[0].length === 0) {
                         analysisResults.push(
                             new Build.AnalysisResult(
                                 Build.AnalysisResultType.Error,
                                 "Code function requires first parameter specifying file path parameter.",
-                                line,
-                                column
+                                _function.line,
+                                _function.column
                             )
                         );
-                    } else if (parameters.length < 2 || parameters[1].length === 0) {
+                    } else if (_function.parameters.length < 2 || _function.parameters[1].length === 0) {
                         analysisResults.push(
                             new Build.AnalysisResult(
                                 Build.AnalysisResultType.Error,
                                 "Code function requires second parameter specifying code block language.",
-                                line,
-                                column
+                                _function.line,
+                                _function.column
                             )
                         );
                     }
                 }
-            });
+            }
 
             return analysisResults;
         }
@@ -64,24 +70,31 @@ export namespace CodeFunction {
         async getDependencies(path: string, _relativePath: string, content: string): Promise<string[]> {
             const dependencies: string[] = [];
 
-            await MarkdownBuild.handleFunctions(content, async (functionName, parameters) => {
-                if (functionName === "code") {
-                    const dependency = this.fileSystem.clearPath(this.fileSystem.getDirectory(path), parameters[0]);
+            const functions = MarkdownBuild.matchAllFunctions(content);
+
+            for (let i = 0; i < functions.length; i++) {
+                const _function = functions[i];
+
+                if (_function.functionName === functionName) {
+                    const dependency = this.fileSystem.clearPath(
+                        this.fileSystem.getDirectory(path),
+                        _function.parameters[0]
+                    );
 
                     if (dependencies.indexOf(dependency) !== -1) {
-                        return;
+                        continue;
                     }
 
                     dependencies.push(dependency);
                 }
-            });
+            }
 
             return dependencies;
         }
     }
 
     export class FunctionExecutor implements MarkdownBuild.IFunctionExecutor {
-        functionName: string = "code";
+        functionName: string = functionName;
 
         public constructor(private fileSystem: FileSystem.IFileSystem) {}
 
