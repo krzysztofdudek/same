@@ -1,9 +1,9 @@
-import { ServiceProvider } from "../../infrastructure/service-provider.js";
 import { Build } from "../../core/build.js";
+import { ServiceProvider } from "../../infrastructure/service-provider.js";
 import { FileSystem } from "../../infrastructure/file-system.js";
 import { MarkdownBuild } from "../markdown.js";
 
-export namespace CodeFunction {
+export namespace PlantUmlFunction {
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
         Build.registerFileAnalyzer(serviceProvider, () => new FileAnalyzer());
 
@@ -14,7 +14,11 @@ export namespace CodeFunction {
 
         MarkdownBuild.registerFunctionExecutor(
             serviceProvider,
-            () => new FunctionExecutor(serviceProvider.resolve(FileSystem.iFileSystemServiceKey))
+            () =>
+                new FunctionExecutor(
+                    serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
+                    serviceProvider.resolve(Build.iOptionsServiceKey)
+                )
         );
     }
 
@@ -28,29 +32,24 @@ export namespace CodeFunction {
         ): Promise<Build.AnalysisResult[]> {
             const analysisResults: Build.AnalysisResult[] = [];
 
-            await MarkdownBuild.handleFunctions(content, async (functionName, parameters, line, column) => {
-                if (functionName === "code") {
-                    if (parameters.length === 0 || parameters[0].length === 0) {
+            const functions = MarkdownBuild.matchAllFunctions(content);
+
+            for (let i = 0; i < functions.length; i++) {
+                const _function = functions[i];
+
+                if (_function.functionName == "plantuml") {
+                    if (_function.parameters.length === 0 || _function.parameters[0].length === 0) {
                         analysisResults.push(
                             new Build.AnalysisResult(
                                 Build.AnalysisResultType.Error,
-                                "Code function requires first parameter specifying file path parameter.",
-                                line,
-                                column
-                            )
-                        );
-                    } else if (parameters.length < 2 || parameters[1].length === 0) {
-                        analysisResults.push(
-                            new Build.AnalysisResult(
-                                Build.AnalysisResultType.Error,
-                                "Code function requires second parameter specifying code block language.",
-                                line,
-                                column
+                                "Plantuml function requires first parameter specifying file path parameter.",
+                                _function.line,
+                                _function.column
                             )
                         );
                     }
                 }
-            });
+            }
 
             return analysisResults;
         }
@@ -65,7 +64,7 @@ export namespace CodeFunction {
             const dependencies: string[] = [];
 
             await MarkdownBuild.handleFunctions(content, async (functionName, parameters) => {
-                if (functionName === "code") {
+                if (functionName === "plantuml") {
                     const dependency = this.fileSystem.clearPath(this.fileSystem.getDirectory(path), parameters[0]);
 
                     if (dependencies.indexOf(dependency) !== -1) {
@@ -81,20 +80,23 @@ export namespace CodeFunction {
     }
 
     export class FunctionExecutor implements MarkdownBuild.IFunctionExecutor {
-        functionName: string = "code";
+        functionName: string = "plantuml";
 
-        public constructor(private fileSystem: FileSystem.IFileSystem) {}
+        public constructor(private fileSystem: FileSystem.IFileSystem, private buildOptions: Build.IOptions) {}
 
         async execute(executionContext: MarkdownBuild.FunctionExecutionContext): Promise<string> {
-            const codeFilePath = this.fileSystem.clearPath(
-                this.fileSystem.getDirectory(executionContext.filePath),
-                executionContext.parameters[0]
+            const filePath = this.fileSystem.clearPath(
+                this.buildOptions.outputDirectoryPath,
+                this.fileSystem
+                    .getDirectory(executionContext.filePath)
+                    .substring(this.buildOptions.sourceDirectoryPath.length + 1),
+                executionContext.parameters[0],
+                `${executionContext.parameters.length > 1 ? executionContext.parameters[1] : "1"}.svg`
             );
-            const codeLanguage = executionContext.parameters[1];
 
-            const codeFileContent = await this.fileSystem.readFile(codeFilePath);
+            const fileContent = await this.fileSystem.readFile(filePath);
 
-            return `\`\`\`${codeLanguage}\n${codeFileContent}\n\`\`\``;
+            return fileContent;
         }
     }
 }

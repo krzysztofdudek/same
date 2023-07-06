@@ -5,20 +5,20 @@ import { MarkdownBuild } from "../markdown.js";
 
 export namespace ImportFunction {
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
-        Build.registerFileAnalyzer(serviceProvider, () => new ImportFunctionAnalyzer());
+        Build.registerFileAnalyzer(serviceProvider, () => new FunctionAnalyzer());
 
         Build.registerFileDependencyIntrospector(
             serviceProvider,
-            () => new ImportFunctionDependencyIntrospector(serviceProvider.resolve(FileSystem.iFileSystemServiceKey))
+            () => new FileDependencyIntrospector(serviceProvider.resolve(FileSystem.iFileSystemServiceKey))
         );
 
         MarkdownBuild.registerFunctionExecutor(
             serviceProvider,
-            () => new ImportFunctionExecutor(serviceProvider.resolve(FileSystem.iFileSystemServiceKey))
+            () => new FunctionExecutor(serviceProvider.resolve(FileSystem.iFileSystemServiceKey))
         );
     }
 
-    export class ImportFunctionAnalyzer implements Build.IFileAnalyzer {
+    export class FunctionAnalyzer implements Build.IFileAnalyzer {
         fileExtensions: string[] = ["md"];
 
         async getAnalysisResults(
@@ -58,7 +58,7 @@ export namespace ImportFunction {
         }
     }
 
-    export class ImportFunctionDependencyIntrospector implements Build.IFileDependencyIntrospector {
+    export class FileDependencyIntrospector implements Build.IFileDependencyIntrospector {
         fileExtensions: string[] = ["md"];
 
         public constructor(private fileSystem: FileSystem.IFileSystem) {}
@@ -82,7 +82,7 @@ export namespace ImportFunction {
         }
     }
 
-    export class ImportFunctionExecutor implements MarkdownBuild.IFunctionExecutor {
+    export class FunctionExecutor implements MarkdownBuild.IFunctionExecutor {
         functionName: string = "import";
 
         public constructor(private fileSystem: FileSystem.IFileSystem) {}
