@@ -11,9 +11,10 @@ import { exit } from "process";
 import absoluteUnixPath from "./infrastructure/functions/absoluteUnixPath.js";
 import { Bootstrapper } from "./bootstrapper.js";
 import { InitializeCommand } from "./commands/initialize.js";
-import { BuildCommand } from "./commands/build.js";
+import { PublishCommand } from "./commands/publish.js";
 import { Logger } from "./infrastructure/logger.js";
 import { FileSystem } from "./infrastructure/file-system.js";
+import { ServeCommand } from "./commands/serve.js";
 
 const loggerOptions = Bootstrapper.serviceProvider.resolve<Logger.IOptions>(Logger.iOptionsServiceKey);
 const fileSystem = Bootstrapper.serviceProvider.resolve<FileSystem.IFileSystem>(FileSystem.iFileSystemServiceKey);
@@ -30,16 +31,16 @@ const program = new Command().version(version).description("Software Architectur
 program
     .command("initialize")
     .description("initializes repository")
-    .option("--name <name>", "product name", "Your Product")
-    .option("--working-directory <path>", "working directory path", `${currentWorkingDirectory}`)
-    .option("--source-directory <name>", "source directory name", `src`)
-    .option("--tools-directory <name>", "tools directory name", `_tools`)
-    .option(
+    .requiredOption("--name <name>", "product name", "Your Product")
+    .requiredOption("--working-directory <path>", "working directory path", `${currentWorkingDirectory}`)
+    .requiredOption("--source-directory <name>", "source directory name", `src`)
+    .requiredOption("--tools-directory <name>", "tools directory name", `_tools`)
+    .requiredOption(
         "--minimal-log-level <level>",
         "minimal log level (Trace, Debug, Information, Warning, Error)",
         "Information"
     )
-    .option("--log-format <format>", "format of logs (Compact, Extensive)", "Compact")
+    .requiredOption("--log-format <format>", "format of logs (Compact, Extensive)", "Compact")
     .action((args) => {
         const workingDirectory = fileSystem.clearPath(
             args.workingDirectory.replace(currentWorkingDirectory, process.cwd())
@@ -70,24 +71,24 @@ program
     });
 
 program
-    .command("build")
-    .description("builds source files")
-    .requiredOption("--output-type <type>", "build output type (html)", undefined)
-    .option("--host-name <name>", "host name", "localhost")
-    .option("--host-port <port>", "host port", "8080")
-    .option("--host-protocol <protocol>", "host protocol", "http")
-    .option("--plant-uml-server-port <port>", "PlantUML server port", "65100")
-    .option("--working-directory <path>", "working directory path", `${currentWorkingDirectory}`)
-    .option("--source-directory <name>", "source directory name", `src`)
-    .option("--tools-directory <name>", "tools directory name", `_tools`)
-    .option("--build-directory <name>", "build directory name; build artifacts are stored here", `_build`)
-    .option("--publish-directory <name>", "place where files", `_publish`)
-    .option(
+    .command("publish")
+    .description("prepares artifacts to be published")
+    .requiredOption("--output-type <type>", "artifacts output type (html)", "html")
+    .requiredOption("--host-name <name>", "host name", "localhost")
+    .requiredOption("--host-port <port>", "host port", "8080")
+    .requiredOption("--host-protocol <protocol>", "host protocol", "http")
+    .requiredOption("--plant-uml-server-port <port>", "PlantUML server port", "65100")
+    .requiredOption("--working-directory <path>", "working directory path", `${currentWorkingDirectory}`)
+    .requiredOption("--source-directory <name>", "a directory where source files lays", `src`)
+    .requiredOption("--tools-directory <name>", "a directory destined for tools setup", `_tools`)
+    .requiredOption("--build-directory <name>", "a directory for storage of build artifacts", `_build`)
+    .requiredOption("--publish-directory <name>", "a directory where publish artifacts are stored", `_publish`)
+    .requiredOption(
         "--minimal-log-level <level>",
         "minimal log level (Trace, Debug, Information, Warning, Error)",
         "Information"
     )
-    .option("--log-format <format>", "format of logs (Compact, Extensive)", "Compact")
+    .requiredOption("--log-format <format>", "format of logs (Compact, Extensive)", "Compact")
     .action((args) => {
         const workingDirectory = fileSystem.clearPath(
             args.workingDirectory.replace(currentWorkingDirectory, process.cwd())
@@ -96,7 +97,9 @@ program
         loggerOptions.minimalLogLevel = args.minimalLogLevel;
         loggerOptions.logFormat = args.logFormat;
 
-        const command = Bootstrapper.serviceProvider.resolve<BuildCommand.ICommand>(BuildCommand.iCommandServiceKey);
+        const command = Bootstrapper.serviceProvider.resolve<PublishCommand.ICommand>(
+            PublishCommand.iCommandServiceKey
+        );
 
         command
             .execute({
@@ -108,7 +111,8 @@ program
                 workingDirectoryPath: absoluteUnixPath(workingDirectory),
                 sourceDirectoryPath: absoluteUnixPath(workingDirectory, args.sourceDirectory),
                 toolsDirectoryPath: absoluteUnixPath(workingDirectory, args.toolsDirectory),
-                outputDirectoryPath: absoluteUnixPath(workingDirectory, args.outputDirectory),
+                buildDirectoryPath: absoluteUnixPath(workingDirectory, args.buildDirectory),
+                publishDirectoryPath: absoluteUnixPath(workingDirectory, args.publishDirectory),
             })
             .then(() => {
                 exit(0);
@@ -120,32 +124,53 @@ program
             });
     });
 
-// program
-//     .command("serve")
-//     .description("runs live server")
-//     .option("--host-name <name>", "host name", "localhost")
-//     .option("--host-port <port>", "host port", "8080")
-//     .option("--host-protocol <protocol>", "host protocol", "http")
-//     .option("--plant-uml-server-port <port>", "PlantUML server port", "65100")
-//     .option("--working-directory <path>", "working directory path", `${currentWorkingDirectory}`)
-//     .option("--source-directory <name>", "source directory name", `src`)
-//     .option("--tools-directory <name>", "tools directory name", `_tools`)
-//     .option("--output-directory <name>", "output directory name", `_build`)
-//     .action((args) => {
-//         const workingDirectory = path.resolve(args.workingDirectory.replace(currentWorkingDirectory, process.cwd()));
+program
+    .command("serve")
+    .description("serves documentation with live reload ability")
+    .requiredOption("--output-type <type>", "artifacts output type (html)", "html")
+    .requiredOption("--host-name <name>", "host name", "localhost")
+    .requiredOption("--host-port <port>", "host port", "8080")
+    .requiredOption("--host-protocol <protocol>", "host protocol", "http")
+    .requiredOption("--plant-uml-server-port <port>", "PlantUML server port", "65100")
+    .requiredOption("--working-directory <path>", "working directory path", `${currentWorkingDirectory}`)
+    .requiredOption("--source-directory <name>", "a directory where source files lays", `src`)
+    .requiredOption("--tools-directory <name>", "a directory destined for tools setup", `_tools`)
+    .requiredOption("--build-directory <name>", "a directory for storage of build artifacts", `_build`)
+    .requiredOption("--publish-directory <name>", "a directory where publish artifacts are stored", `_publish`)
+    .requiredOption(
+        "--minimal-log-level <level>",
+        "minimal log level (Trace, Debug, Information, Warning, Error)",
+        "Information"
+    )
+    .requiredOption("--log-format <format>", "format of logs (Compact, Extensive)", "Compact")
+    .action((args) => {
+        const workingDirectory = fileSystem.clearPath(
+            args.workingDirectory.replace(currentWorkingDirectory, process.cwd())
+        );
 
-//         execServe({
-//             hostName: args.hostName,
-//             hostPort: args.hostPort,
-//             hostProtocol: args.hostProtocol,
-//             plantUmlServerPort: Number(args.plantUmlServerPort),
-//             workingDirectoryPath: absoluteUnixPath(workingDirectory),
-//             sourceDirectoryPath: absoluteUnixPath(workingDirectory, args.sourceDirectory),
-//             toolsDirectoryPath: absoluteUnixPath(workingDirectory, args.toolsDirectory),
-//             outputDirectoryPath: absoluteUnixPath(workingDirectory, args.outputDirectory),
-//         }).catch((error) => {
-//             console.log(error);
-//         });
-//     });
+        loggerOptions.minimalLogLevel = args.minimalLogLevel;
+        loggerOptions.logFormat = args.logFormat;
+
+        const command = Bootstrapper.serviceProvider.resolve<ServeCommand.ICommand>(ServeCommand.iCommandServiceKey);
+
+        command
+            .execute({
+                outputType: args.outputType,
+                hostName: args.hostName,
+                hostPort: args.hostPort,
+                hostProtocol: args.hostProtocol,
+                plantUmlServerPort: Number(args.plantUmlServerPort),
+                workingDirectoryPath: absoluteUnixPath(workingDirectory),
+                sourceDirectoryPath: absoluteUnixPath(workingDirectory, args.sourceDirectory),
+                toolsDirectoryPath: absoluteUnixPath(workingDirectory, args.toolsDirectory),
+                buildDirectoryPath: absoluteUnixPath(workingDirectory, args.buildDirectory),
+                publishDirectoryPath: absoluteUnixPath(workingDirectory, args.publishDirectory),
+            })
+            .catch((error) => {
+                logger.error(error);
+
+                exit(1);
+            });
+    });
 
 program.parse();

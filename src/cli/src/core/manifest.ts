@@ -79,6 +79,8 @@ export namespace Manifest {
     }
 
     export class Repository implements IRepository {
+        private _manifest: Manifest | null = null;
+
         public constructor(
             private fileSystem: FileSystem.IFileSystem,
             private options: IOptions,
@@ -94,6 +96,10 @@ export namespace Manifest {
         }
 
         async load(): Promise<Manifest | ManifestCanNotBeLoaded | ManifestIsNotInitialized> {
+            if (this._manifest !== null) {
+                return this._manifest;
+            }
+
             const filePath = this.getFilePath();
 
             if (await this.fileSystem.checkIfExists(filePath)) {
@@ -109,7 +115,9 @@ export namespace Manifest {
 
                 const state = JSON.parse(content);
 
-                return Manifest.fromState(state);
+                this._manifest = Manifest.fromState(state);
+
+                return this._manifest;
             }
 
             this.logger.error("Manifest files does not exists");

@@ -1,27 +1,12 @@
-import path from "path";
-import fsPromises from "fs/promises";
-
-export namespace Assets {
-    export async function saveJs(outputDirectoryPath: string) {
-        await fsPromises.writeFile(
-            path.join(outputDirectoryPath, "script.js"),
-            `const client = new WebSocket(location.origin.replace('http', 'ws'));
+export const scriptJsFileContent = `const client = new WebSocket(location.origin.replace('http', 'ws'));
 
 client.addEventListener('message', message => {
     if (message.data === 'refresh') {
         location.reload();
     }
-})`,
-            {
-                encoding: "utf-8",
-            }
-        );
-    }
+})`;
 
-    export async function saveCss(outputDirectoryPath: string) {
-        await fsPromises.writeFile(
-            path.join(outputDirectoryPath, "styles.css"),
-            `@media (prefers-color-scheme: dark) {
+export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     .markdown-body {
       color-scheme: dark;
       --color-prettylights-syntax-comment: #8b949e;
@@ -1126,10 +1111,4 @@ client.addEventListener('message', message => {
 
   .markdown-body svg {
       background-color: white;
-  }`,
-            {
-                encoding: "utf-8",
-            }
-        );
-    }
-}
+  }`;

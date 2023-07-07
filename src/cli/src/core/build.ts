@@ -126,6 +126,9 @@ export namespace Build {
     }
 
     export interface IBuildExtension {
+        outputType: string;
+
+        onBuildStarted(): Promise<void>;
         onFileBuilt(file: AnalyzedFile): Promise<void>;
     }
 
@@ -253,7 +256,7 @@ export namespace Build {
         }
 
         async analyze(filePath: string): Promise<void> {
-            this.logger.debug(`Running analysis of single file: ${filePath}`);
+            this.logger.debug(`Running analysis`);
 
             await this.analyzeFileInternal(filePath);
 
@@ -263,6 +266,8 @@ export namespace Build {
         private async analyzeFileInternal(filePath: string): Promise<void> {
             if (!(await this.fileSystem.checkIfExists(filePath))) {
                 this.files = this.files.filter((x) => x.path !== filePath);
+
+                await this.notifyWatchersOnFileDeleted(filePath);
 
                 return;
             }
@@ -301,6 +306,14 @@ export namespace Build {
             const hash = createHash("sha512").update(fileContent, "utf-8").digest("base64");
 
             return { fileExtension, dependencies, hash, analysisResults };
+        }
+
+        private async notifyWatchersOnFileDeleted(filePath: string) {
+            for (let i = 0; i < this.onFileDeleted.length; i++) {
+                const entry = this.onFileDeleted[i];
+
+                await entry.callback(filePath);
+            }
         }
 
         private async notifyWatchersOnFileAnalyzed(file: AnalyzedFile) {
@@ -421,11 +434,19 @@ export namespace Build {
                 let existingEntryIndex = this.fileEntries.findIndex((x) => x.file.path === file.path);
 
                 if (existingEntryIndex !== -1) {
-                    const entry = this.fileEntries[existingEntryIndex];
+                    const currentFileEntry = this.fileEntries[existingEntryIndex];
 
-                    this.fileEntries[existingEntryIndex] = { file, builtHash: entry.builtHash };
+                    const newFileEntry = { file, builtHash: currentFileEntry.builtHash };
+
+                    this.fileEntries[existingEntryIndex] = newFileEntry;
+
+                    if (file.hash !== currentFileEntry.builtHash) {
+                        this.resetBuildHashForDependentFiles(newFileEntry);
+                    }
                 } else {
-                    this.fileEntries.push({ file, builtHash: null });
+                    const fileEntry = { file, builtHash: null };
+
+                    this.fileEntries.push(fileEntry);
                 }
             });
 
@@ -447,6 +468,10 @@ export namespace Build {
                 return false;
             }
 
+            const buildExtensions = this.buildExtensions.filter((x) => x.outputType === this.options.outputType);
+
+            await asyncForeach(buildExtensions, async (x) => await x.onBuildStarted());
+
             const fileEntries = this.fileEntries.filter((x) => x.builtHash !== x.file.hash);
             for (let i = 0; i < fileEntries.length; i++) {
                 const fileEntry = fileEntries[i];
@@ -457,7 +482,7 @@ export namespace Build {
                     return false;
                 }
 
-                await asyncForeach(this.buildExtensions, async (x) => await x.onFileBuilt(fileEntry.file));
+                await asyncForeach(buildExtensions, async (x) => await x.onFileBuilt(fileEntry.file));
             }
 
             this.logger.info("Build succeeded");
@@ -520,14 +545,26 @@ export namespace Build {
                 }
 
                 fileEntry.builtHash = hash;
-
-                return true;
             } catch (error) {
                 this.logger.info("Build failed");
                 this.logger.error(error);
 
                 return false;
             }
+
+            return true;
+        }
+
+        private resetBuildHashForDependentFiles(fileEntry: IBuilderFileEntry) {
+            const dependentFilesEntries = this.fileEntries.filter(
+                (x) => x.file.dependencies.indexOf(fileEntry.file.path) !== -1
+            );
+
+            dependentFilesEntries.forEach((fileEntry) => {
+                fileEntry.builtHash = null;
+
+                this.resetBuildHashForDependentFiles(fileEntry);
+            });
         }
     }
 }

@@ -4,9 +4,10 @@ import { Manifest } from "../core/manifest.js";
 import { Toolset } from "../core/toolset.js";
 import { Build } from "../core/build.js";
 import { PlantUml } from "../tools/plant-uml.js";
+import { Publish } from "../publish/publish-static-files.js";
 
-export namespace BuildCommand {
-    export const iCommandServiceKey = "BuildCommand.ICommand";
+export namespace PublishCommand {
+    export const iCommandServiceKey = "PublishCommand.ICommand";
 
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
         serviceProvider.registerSingleton(
@@ -20,7 +21,8 @@ export namespace BuildCommand {
                     serviceProvider.resolve(Toolset.iToolsetServiceKey),
                     serviceProvider.resolve(PlantUml.iServerServiceKey),
                     serviceProvider.resolve(Build.iBuilderServiceKey),
-                    serviceProvider.resolve(Build.iContextServiceKey)
+                    serviceProvider.resolve(Build.iContextServiceKey),
+                    serviceProvider.resolve(Publish.iOptionsServiceKey)
                 )
         );
     }
@@ -33,8 +35,9 @@ export namespace BuildCommand {
         plantUmlServerPort: number;
         workingDirectoryPath: string;
         sourceDirectoryPath: string;
-        outputDirectoryPath: string;
+        buildDirectoryPath: string;
         toolsDirectoryPath: string;
+        publishDirectoryPath: string;
     }
 
     export interface ICommand extends ICommandCore<IOptions> {}
@@ -48,15 +51,24 @@ export namespace BuildCommand {
             private toolset: Toolset.IToolset,
             private plantUmlServer: PlantUml.IServer,
             private builder: Build.IBuilder,
-            private context: Build.IContext
+            private context: Build.IContext,
+            private publishOptions: Publish.IOptions
         ) {}
 
         async execute(options: IOptions): Promise<void> {
             this.manifestOptions.workingDirectory = options.workingDirectoryPath;
+
             this.toolsOptions.toolsDirectoryPath = options.toolsDirectoryPath;
+
             this.buildOptions.sourceDirectoryPath = options.sourceDirectoryPath;
-            this.buildOptions.outputDirectoryPath = options.outputDirectoryPath;
+            this.buildOptions.outputDirectoryPath = options.buildDirectoryPath;
             this.buildOptions.outputType = options.outputType;
+
+            this.publishOptions.outputDirectoryPath = options.publishDirectoryPath;
+            this.publishOptions.hostProtocol = options.hostProtocol;
+            this.publishOptions.hostName = options.hostName;
+            this.publishOptions.hostPort = options.hostPort;
+
             this.plantUmlOptions.serverPort = options.plantUmlServerPort;
 
             try {

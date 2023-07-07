@@ -2,7 +2,7 @@ import { ServiceProvider } from "../infrastructure/service-provider.js";
 import { Build } from "./build.js";
 import { GitHub } from "./github.js";
 import { Manifest } from "./manifest.js";
-import { Publish } from "./publish.js";
+import { Publish } from "../publish/publish-static-files.js";
 import { Toolset } from "./toolset.js";
 
 export namespace Core {

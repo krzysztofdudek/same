@@ -25,9 +25,27 @@ export namespace FileSystem {
         getExtension(path: string): string;
         getDirectory(path: string): string;
         getName(path: string): string;
+        watchRecursive(path: string, callback: (path: string) => void): void;
     }
 
     export class FileSystem implements IFileSystem {
+        watchRecursive(path: string, callback: (path: string) => void): void {
+            fs.watch(
+                path,
+                {
+                    recursive: true,
+                },
+                (eventType, fileName) => {
+                    if (!(typeof fileName === "string")) {
+                        return;
+                    }
+
+                    if (eventType === "change") {
+                        callback(this.clearPath(path, fileName));
+                    }
+                }
+            );
+        }
         getName(path: string): string {
             return basename(path);
         }
