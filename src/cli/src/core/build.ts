@@ -2,8 +2,7 @@ import { ServiceProvider } from "../infrastructure/service-provider.js";
 import { FileSystem } from "../infrastructure/file-system.js";
 import { createHash } from "crypto";
 import { Logger } from "../infrastructure/logger.js";
-import { relative } from "path";
-import { Core } from "./index.js";
+import { asyncForeach } from "./index.js";
 
 export namespace Build {
     export const iOptionsServiceKey = "Build.IOptions";
@@ -13,6 +12,8 @@ export namespace Build {
     export const iFileDependencyIntrospectorServiceKey = "Build.IFileDependencyIntrospector";
     export const iFileAnalyzerServiceKey = "Build.IFileAnalyzer";
     export const iFileBuilderServiceKey = "Build.IFileBuilder";
+
+    export const iBuildExtension = "Build.IBuildExtension";
 
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
         serviceProvider.registerSingleton(
@@ -48,7 +49,8 @@ export namespace Build {
                     serviceProvider
                         .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
                         .create(iBuilderServiceKey),
-                    serviceProvider.resolve(FileSystem.iFileSystemServiceKey)
+                    serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
+                    serviceProvider.resolveMany<IBuildExtension>(iBuildExtension)
                 )
         );
     }
@@ -74,9 +76,17 @@ export namespace Build {
         serviceProvider.registerSingleton(iFileBuilderServiceKey, factory);
     }
 
+    export function registerBuildExtension(
+        serviceProvider: ServiceProvider.IServiceProvider,
+        factory: () => IBuildExtension
+    ) {
+        serviceProvider.registerSingleton(iBuildExtension, factory);
+    }
+
     export interface IOptions {
         sourceDirectoryPath: string;
         outputDirectoryPath: string;
+        outputType: string;
     }
 
     export interface IContext {
@@ -84,11 +94,14 @@ export namespace Build {
         analyze(filePath: string): Promise<void>;
         getAllFiles(): AnalyzedFile[];
         getFile(filePath: string): AnalyzedFile | null;
+        attachOnFileAnalyzed(key: string, callback: (file: AnalyzedFile) => Promise<void>): void;
+        detachOnFileAnalyzed(key: string): void;
+        attachOnFileDeleted(key: string, callback: (file: string) => Promise<void>): void;
+        detachOnFileDeleted(key: string): void;
     }
 
     export interface IBuilder {
-        buildAll(outputType: string): Promise<boolean>;
-        buildContinuously(outputType: string, cancellationToken: Core.CancellationToken): Promise<void>;
+        build(): Promise<boolean>;
     }
 
     export class FileBuildContext {
@@ -110,6 +123,10 @@ export namespace Build {
         outputType: string;
 
         build(context: FileBuildContext): Promise<void>;
+    }
+
+    export interface IBuildExtension {
+        onFileBuilt(file: AnalyzedFile): Promise<void>;
     }
 
     export interface IFileDependencyIntrospector {
@@ -152,7 +169,7 @@ export namespace Build {
         getAnalysisResults(path: string, relativePath: string, content: string): Promise<AnalysisResult[]>;
     }
 
-    class AnalyzedFile {
+    export class AnalyzedFile {
         public constructor(
             private _path: string,
             private _compactPath: string,
@@ -183,8 +200,9 @@ export namespace Build {
     }
 
     export class Context implements IContext {
-        private performedCompleteAnalysis = false;
         private files: AnalyzedFile[] = [];
+        private onFileAnalyzed: { key: string; callback: (file: AnalyzedFile) => Promise<void> }[] = [];
+        private onFileDeleted: { key: string; callback: (filePath: string) => Promise<void> }[] = [];
 
         public constructor(
             private fileSystem: FileSystem.IFileSystem,
@@ -193,6 +211,22 @@ export namespace Build {
             private fileAnalyzers: IFileAnalyzer[],
             private logger: Logger.ILogger
         ) {}
+
+        attachOnFileDeleted(key: string, callback: (filePath: string) => Promise<void>): void {
+            this.onFileDeleted.push({ key, callback });
+        }
+
+        detachOnFileDeleted(key: string): void {
+            this.onFileDeleted = this.onFileDeleted.filter((x) => x.key !== key);
+        }
+
+        detachOnFileAnalyzed(key: string): void {
+            this.onFileAnalyzed = this.onFileAnalyzed.filter((x) => x.key !== key);
+        }
+
+        attachOnFileAnalyzed(key: string, callback: (file: AnalyzedFile) => Promise<void>) {
+            this.onFileAnalyzed.push({ key, callback });
+        }
 
         getAllFiles(): AnalyzedFile[] {
             return [...this.files];
@@ -212,51 +246,72 @@ export namespace Build {
             for (let i = 0; i < filesPaths.length; i++) {
                 const filePath = filesPaths[i];
 
-                await this.processFile(filePath);
+                await this.analyzeFileInternal(filePath);
             }
-
-            this.performedCompleteAnalysis = true;
 
             this.logger.debug("Analysis complete");
         }
 
         async analyze(filePath: string): Promise<void> {
-            if (this.performedCompleteAnalysis === false) {
-                await this.analyzeCompletely();
-
-                return;
-            }
-
             this.logger.debug(`Running analysis of single file: ${filePath}`);
 
-            await this.processFile(filePath);
+            await this.analyzeFileInternal(filePath);
 
             this.logger.debug("Analysis complete");
         }
 
-        private async processFile(filePath: string): Promise<void> {
+        private async analyzeFileInternal(filePath: string): Promise<void> {
+            if (!(await this.fileSystem.checkIfExists(filePath))) {
+                this.files = this.files.filter((x) => x.path !== filePath);
+
+                return;
+            }
+
             const compactFilePath = this.compactPath(filePath);
 
             this.logger.trace(`Processing file: ${compactFilePath}`);
 
-            const fileExtension = this.fileSystem.getExtension(filePath);
-            const fileContent = await this.fileSystem.readFile(filePath);
-
-            const dependencies = await this.analyzeDependencies(fileExtension, filePath, fileContent);
-            const analysisResults = await this.analyzeFile(fileExtension, filePath, fileContent);
-
-            await this.checkIfDependenciesExist(dependencies, analysisResults);
+            const { fileExtension, dependencies, hash, analysisResults } = await this.gatherAnalysisArtifacts(filePath);
 
             this.printAnalysisResults(analysisResults, compactFilePath);
 
-            const hash = createHash("sha512").update(fileContent, "utf-8").digest("base64");
-
-            this.updateFileInformation(
-                new AnalyzedFile(filePath, compactFilePath, fileExtension, dependencies, hash, analysisResults)
+            const file = new AnalyzedFile(
+                filePath,
+                compactFilePath,
+                fileExtension,
+                dependencies,
+                hash,
+                analysisResults
             );
+
+            this.updateFileInformation(file);
+
+            await this.notifyWatchersOnFileAnalyzed(file);
         }
 
-        private async analyzeFile(fileExtension: string, path: string, content: string) {
+        private async gatherAnalysisArtifacts(filePath: string) {
+            const fileExtension = this.fileSystem.getExtension(filePath);
+            const fileContent = await this.fileSystem.readFile(filePath);
+
+            const dependencies = await this.gatherDependencies(fileExtension, filePath, fileContent);
+            const analysisResults = await this.gatherAnalysisResults(fileExtension, filePath, fileContent);
+
+            await this.checkIfDependenciesExist(dependencies, analysisResults);
+
+            const hash = createHash("sha512").update(fileContent, "utf-8").digest("base64");
+
+            return { fileExtension, dependencies, hash, analysisResults };
+        }
+
+        private async notifyWatchersOnFileAnalyzed(file: AnalyzedFile) {
+            for (let i = 0; i < this.onFileAnalyzed.length; i++) {
+                const entry = this.onFileAnalyzed[i];
+
+                await entry.callback(file);
+            }
+        }
+
+        private async gatherAnalysisResults(fileExtension: string, path: string, content: string) {
             const analysisResults: AnalysisResult[] = [];
             const fileAnalyzers = this.fileAnalyzers.filter(
                 (x) => x.fileExtensions.findIndex((y) => y === fileExtension) > -1
@@ -273,7 +328,7 @@ export namespace Build {
             return analysisResults;
         }
 
-        private async analyzeDependencies(fileExtension: string, path: string, content: string): Promise<string[]> {
+        private async gatherDependencies(fileExtension: string, path: string, content: string): Promise<string[]> {
             const dependencyFinders = this.dependencyFinders.filter(
                 (x) => x.fileExtensions.findIndex((y) => y === fileExtension) > -1
             );
@@ -355,54 +410,35 @@ export namespace Build {
         private fileEntries: IBuilderFileEntry[] = [];
 
         public constructor(
-            private context: IContext,
+            context: IContext,
             private options: IOptions,
             private fileBuilders: IFileBuilder[],
             private logger: Logger.ILogger,
-            private fileSystem: FileSystem.IFileSystem
-        ) {}
+            private fileSystem: FileSystem.IFileSystem,
+            private buildExtensions: IBuildExtension[]
+        ) {
+            context.attachOnFileAnalyzed("builder", async (file) => {
+                let existingEntryIndex = this.fileEntries.findIndex((x) => x.file.path === file.path);
 
-        async buildContinuously(outputType: string, cancellationToken: Core.CancellationToken): Promise<void> {
-            this.logger.info("Running complete build");
+                if (existingEntryIndex !== -1) {
+                    const entry = this.fileEntries[existingEntryIndex];
 
-            await this.prepareBuild();
+                    this.fileEntries[existingEntryIndex] = { file, builtHash: entry.builtHash };
+                } else {
+                    this.fileEntries.push({ file, builtHash: null });
+                }
+            });
 
-            let fileEntry: IBuilderFileEntry | null;
-            while (
-                (fileEntry = this.fileEntries.find((x) => x.builtHash === null) || null) !== null &&
-                fileEntry.builtHash === null
-            ) {
-                await this.buildInternal(fileEntry, outputType);
-            }
-
-            this.logger.info("Build succeeded");
+            context.attachOnFileDeleted("builder", async (filePath) => {
+                this.fileEntries = this.fileEntries.filter((x) => x.file.path !== filePath);
+            });
         }
 
-        async buildAll(outputType: string): Promise<boolean> {
+        async build(): Promise<boolean> {
             this.logger.info("Running complete build");
 
-            await this.prepareBuild();
-
-            let fileEntry: IBuilderFileEntry | null;
-            while (
-                (fileEntry = this.fileEntries.find((x) => x.builtHash === null) || null) !== null &&
-                fileEntry.builtHash === null
-            ) {
-                await this.buildInternal(fileEntry, outputType);
-            }
-
-            this.logger.info("Build succeeded");
-
-            return true;
-        }
-
-        async prepareBuild() {
-            await this.context.analyzeCompletely();
-
-            const files = this.context.getAllFiles();
-
-            const wereDetectedErrors = files.find(
-                (x) => x.analysisResults.find((y) => y.type === AnalysisResultType.Error) !== undefined
+            const wereDetectedErrors = this.fileEntries.find(
+                (x) => x.file.analysisResults.find((y) => y.type === AnalysisResultType.Error) !== undefined
             );
 
             if (wereDetectedErrors) {
@@ -411,16 +447,36 @@ export namespace Build {
                 return false;
             }
 
-            this.fileEntries = files.map((file) => ({
-                file,
-                builtHash: null,
-            }));
+            const fileEntries = this.fileEntries.filter((x) => x.builtHash !== x.file.hash);
+            for (let i = 0; i < fileEntries.length; i++) {
+                const fileEntry = fileEntries[i];
+
+                const result = await this.buildFile(fileEntry, this.options.outputType);
+
+                if (!result) {
+                    return false;
+                }
+
+                await asyncForeach(this.buildExtensions, async (x) => await x.onFileBuilt(fileEntry.file));
+            }
+
+            this.logger.info("Build succeeded");
+
+            return true;
         }
 
-        async buildInternal(fileEntry: IBuilderFileEntry, outputType: string): Promise<boolean> {
+        private async buildFile(
+            fileEntry: IBuilderFileEntry,
+            outputType: string,
+            dependencyStack?: { parent: string; child: string }[]
+        ): Promise<boolean> {
             if (fileEntry.builtHash == fileEntry.file.hash) {
                 return true;
             }
+
+            const hash = fileEntry.file.hash;
+
+            dependencyStack ??= [];
 
             for (let i = 0; i < fileEntry.file.dependencies.length; i++) {
                 const dependency = fileEntry.file.dependencies[i];
@@ -430,7 +486,17 @@ export namespace Build {
                     continue;
                 }
 
-                const result = await this.buildInternal(dependencyFileEntry, outputType);
+                if (
+                    dependencyStack.findIndex((x) => x.parent === fileEntry.file.path && x.child === dependency) !== -1
+                ) {
+                    this.logger.error(`Detected dependency loop for "${fileEntry.file.compactPath}". Build stopped.`);
+
+                    return false;
+                }
+
+                dependencyStack.push({ parent: fileEntry.file.path, child: dependency });
+
+                const result = await this.buildFile(dependencyFileEntry, outputType, dependencyStack);
 
                 if (!result) return false;
             }
@@ -453,7 +519,7 @@ export namespace Build {
                     await fileBuilder.build(new FileBuildContext(fileEntry.file.path, relativePath, fileContent));
                 }
 
-                fileEntry.builtHash = fileEntry.file.hash;
+                fileEntry.builtHash = hash;
 
                 return true;
             } catch (error) {

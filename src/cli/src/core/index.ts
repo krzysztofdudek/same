@@ -2,6 +2,7 @@ import { ServiceProvider } from "../infrastructure/service-provider.js";
 import { Build } from "./build.js";
 import { GitHub } from "./github.js";
 import { Manifest } from "./manifest.js";
+import { Publish } from "./publish.js";
 import { Toolset } from "./toolset.js";
 
 export namespace Core {
@@ -10,17 +11,26 @@ export namespace Core {
         Manifest.register(serviceProvider);
         Toolset.register(serviceProvider);
         Build.register(serviceProvider);
+        Publish.register(serviceProvider);
+    }
+}
+
+export class CancellationToken {
+    private _isCancelled: boolean = false;
+
+    cancel() {
+        this._isCancelled = true;
     }
 
-    export class CancellationToken {
-        private _isCancelled: boolean = false;
+    public get isCancelled() {
+        return this._isCancelled;
+    }
+}
 
-        cancel() {
-            this._isCancelled = true;
-        }
+export async function asyncForeach<T>(items: T[], callback: (item: T) => Promise<void>) {
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
 
-        public get isCancelled() {
-            return this._isCancelled;
-        }
+        await callback(item);
     }
 }

@@ -87,6 +87,7 @@ const markdownlintFileContent = `{
 
 const gitIgnoreFileContent = `_tools
 _build
+_publish
 _temp`;
 
 const gitAttributesFileContent = `*.sh            text eol=lf

@@ -19,7 +19,8 @@ export namespace BuildCommand {
                     serviceProvider.resolve(PlantUml.iOptionsServiceKey),
                     serviceProvider.resolve(Toolset.iToolsetServiceKey),
                     serviceProvider.resolve(PlantUml.iServerServiceKey),
-                    serviceProvider.resolve(Build.iBuilderServiceKey)
+                    serviceProvider.resolve(Build.iBuilderServiceKey),
+                    serviceProvider.resolve(Build.iContextServiceKey)
                 )
         );
     }
@@ -46,7 +47,8 @@ export namespace BuildCommand {
             private plantUmlOptions: PlantUml.IOptions,
             private toolset: Toolset.IToolset,
             private plantUmlServer: PlantUml.IServer,
-            private builder: Build.IBuilder
+            private builder: Build.IBuilder,
+            private context: Build.IContext
         ) {}
 
         async execute(options: IOptions): Promise<void> {
@@ -54,6 +56,7 @@ export namespace BuildCommand {
             this.toolsOptions.toolsDirectoryPath = options.toolsDirectoryPath;
             this.buildOptions.sourceDirectoryPath = options.sourceDirectoryPath;
             this.buildOptions.outputDirectoryPath = options.outputDirectoryPath;
+            this.buildOptions.outputType = options.outputType;
             this.plantUmlOptions.serverPort = options.plantUmlServerPort;
 
             try {
@@ -65,7 +68,8 @@ export namespace BuildCommand {
             this.plantUmlServer.start();
 
             try {
-                await this.builder.buildAll(options.outputType);
+                await this.context.analyzeCompletely();
+                await this.builder.build();
             } finally {
                 this.plantUmlServer.stop();
             }
