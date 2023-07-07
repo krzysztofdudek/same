@@ -80,7 +80,8 @@ program
     .option("--working-directory <path>", "working directory path", `${currentWorkingDirectory}`)
     .option("--source-directory <name>", "source directory name", `src`)
     .option("--tools-directory <name>", "tools directory name", `_tools`)
-    .option("--output-directory <name>", "output directory name", `_build`)
+    .option("--build-directory <name>", "build directory name; build artifacts are stored here", `_build`)
+    .option("--publish-directory <name>", "place where files", `_publish`)
     .option(
         "--minimal-log-level <level>",
         "minimal log level (Trace, Debug, Information, Warning, Error)",
