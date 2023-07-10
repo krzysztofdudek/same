@@ -1,5 +1,7 @@
 import { Build } from "../../core/build.js";
+import { FileSystem } from "../../infrastructure/file-system.js";
 import { ServiceProvider } from "../../infrastructure/service-provider.js";
+import { Publish } from "../../publish/publish-static-files.js";
 import { MarkdownBuild } from "../markdown.js";
 
 const functionName = "image";
@@ -8,7 +10,15 @@ export namespace ImageFunction {
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
         Build.registerFileAnalyzer(serviceProvider, () => new FileAnalyzer());
 
-        MarkdownBuild.registerFunctionExecutor(serviceProvider, () => new FunctionExecutor());
+        MarkdownBuild.registerFunctionExecutor(
+            serviceProvider,
+            () =>
+                new FunctionExecutor(
+                    serviceProvider.resolve(Publish.iOptionsServiceKey),
+                    serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
+                    serviceProvider.resolve(Build.iOptionsServiceKey)
+                )
+        );
     }
 
     export class FileAnalyzer implements Build.IFileAnalyzer {
@@ -47,8 +57,17 @@ export namespace ImageFunction {
     export class FunctionExecutor implements MarkdownBuild.IFunctionExecutor {
         functionName: string = functionName;
 
+        public constructor(
+            private publishOptions: Publish.IOptions,
+            private fileSystem: FileSystem.IFileSystem,
+            private buildOptions: Build.IOptions
+        ) {}
+
         async execute(executionContext: MarkdownBuild.FunctionExecutionContext): Promise<string> {
-            const url = executionContext.parameters[0];
+            const filePath = executionContext.parameters[0];
+            const url = `${this.publishOptions.createBaseUrl()}/${this.fileSystem
+                .getDirectory(executionContext.filePath)
+                .substring(this.buildOptions.sourceDirectoryPath.length + 1)}/${filePath}`;
 
             return `<img src="${url}"></img>`;
         }

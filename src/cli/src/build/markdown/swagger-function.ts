@@ -2,6 +2,7 @@ import { Build } from "../../core/build.js";
 import { FileSystem } from "../../infrastructure/file-system.js";
 import { getObject } from "../../infrastructure/functions/getObject.js";
 import { ServiceProvider } from "../../infrastructure/service-provider.js";
+import { Publish } from "../../publish/publish-static-files.js";
 import { MarkdownBuild } from "../markdown.js";
 import { SwaggerBuild } from "../swagger.js";
 import { parameterDependencyIntrospector } from "./parameter-dependency-introspector.js";
@@ -23,7 +24,15 @@ export namespace SwaggerFunction {
             parameterDependencyIntrospector(functionName, 0, serviceProvider.resolve(FileSystem.iFileSystemServiceKey))
         );
 
-        MarkdownBuild.registerFunctionExecutor(serviceProvider, () => new FunctionExecutor());
+        MarkdownBuild.registerFunctionExecutor(
+            serviceProvider,
+            () =>
+                new FunctionExecutor(
+                    serviceProvider.resolve(Publish.iOptionsServiceKey),
+                    serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
+                    serviceProvider.resolve(Build.iOptionsServiceKey)
+                )
+        );
     }
 
     export class FileAnalyzer implements Build.IFileAnalyzer {
@@ -83,11 +92,20 @@ export namespace SwaggerFunction {
     export class FunctionExecutor implements MarkdownBuild.IFunctionExecutor {
         functionName: string = functionName;
 
+        public constructor(
+            private publishOptions: Publish.IOptions,
+            private fileSystem: FileSystem.IFileSystem,
+            private buildOptions: Build.IOptions
+        ) {}
+
         async execute(executionContext: MarkdownBuild.FunctionExecutionContext): Promise<string> {
             const filePath = executionContext.parameters[0];
-            const url = `${filePath.substring(0, filePath.lastIndexOf(".") + 1)}html`;
+            const specUrl = `${this.publishOptions.createBaseUrl()}/${this.fileSystem
+                .getDirectory(executionContext.filePath)
+                .substring(this.buildOptions.sourceDirectoryPath.length + 1)}/${filePath}`;
+            const htmlUrl = `${specUrl.substring(0, specUrl.lastIndexOf(".") + 1)}html`;
 
-            return `[<a href="${url}">Link to Swagger UI</a>, <a href="${filePath}">Link to specification</a>]<br /><iframe src="${url}" style="width: 100%; height: 800px"></iframe>`;
+            return `[<a href="${htmlUrl}">Link to Swagger UI</a>, <a href="${specUrl}">Link to specification</a>]<br /><iframe src="${htmlUrl}" style="width: 100%; height: 800px"></iframe>`;
         }
     }
 }

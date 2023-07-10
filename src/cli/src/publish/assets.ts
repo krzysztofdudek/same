@@ -6,100 +6,50 @@ client.addEventListener('message', message => {
     }
 })`;
 
-export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
-    .markdown-body {
-      color-scheme: dark;
-      --color-prettylights-syntax-comment: #8b949e;
-      --color-prettylights-syntax-constant: #79c0ff;
-      --color-prettylights-syntax-entity: #d2a8ff;
-      --color-prettylights-syntax-storage-modifier-import: #c9d1d9;
-      --color-prettylights-syntax-entity-tag: #7ee787;
-      --color-prettylights-syntax-keyword: #ff7b72;
-      --color-prettylights-syntax-string: #a5d6ff;
-      --color-prettylights-syntax-variable: #ffa657;
-      --color-prettylights-syntax-brackethighlighter-unmatched: #f85149;
-      --color-prettylights-syntax-invalid-illegal-text: #f0f6fc;
-      --color-prettylights-syntax-invalid-illegal-bg: #8e1519;
-      --color-prettylights-syntax-carriage-return-text: #f0f6fc;
-      --color-prettylights-syntax-carriage-return-bg: #b62324;
-      --color-prettylights-syntax-string-regexp: #7ee787;
-      --color-prettylights-syntax-markup-list: #f2cc60;
-      --color-prettylights-syntax-markup-heading: #1f6feb;
-      --color-prettylights-syntax-markup-italic: #c9d1d9;
-      --color-prettylights-syntax-markup-bold: #c9d1d9;
-      --color-prettylights-syntax-markup-deleted-text: #ffdcd7;
-      --color-prettylights-syntax-markup-deleted-bg: #67060c;
-      --color-prettylights-syntax-markup-inserted-text: #aff5b4;
-      --color-prettylights-syntax-markup-inserted-bg: #033a16;
-      --color-prettylights-syntax-markup-changed-text: #ffdfb6;
-      --color-prettylights-syntax-markup-changed-bg: #5a1e02;
-      --color-prettylights-syntax-markup-ignored-text: #c9d1d9;
-      --color-prettylights-syntax-markup-ignored-bg: #1158c7;
-      --color-prettylights-syntax-meta-diff-range: #d2a8ff;
-      --color-prettylights-syntax-brackethighlighter-angle: #8b949e;
-      --color-prettylights-syntax-sublimelinter-gutter-mark: #484f58;
-      --color-prettylights-syntax-constant-other-reference-link: #a5d6ff;
-      --color-fg-default: #c9d1d9;
-      --color-fg-muted: #8b949e;
-      --color-fg-subtle: #6e7681;
-      --color-canvas-default: #0d1117;
-      --color-canvas-subtle: #161b22;
-      --color-border-default: #30363d;
-      --color-border-muted: #21262d;
-      --color-neutral-muted: rgba(110,118,129,0.4);
-      --color-accent-fg: #58a6ff;
-      --color-accent-emphasis: #1f6feb;
-      --color-attention-subtle: rgba(187,128,9,0.15);
-      --color-danger-fg: #f85149;
-    }
-  }
-
-  @media (prefers-color-scheme: light) { */
-    .markdown-body {
-      color-scheme: light;
-      --color-prettylights-syntax-comment: #6e7781;
-      --color-prettylights-syntax-constant: #0550ae;
-      --color-prettylights-syntax-entity: #8250df;
-      --color-prettylights-syntax-storage-modifier-import: #24292f;
-      --color-prettylights-syntax-entity-tag: #116329;
-      --color-prettylights-syntax-keyword: #cf222e;
-      --color-prettylights-syntax-string: #0a3069;
-      --color-prettylights-syntax-variable: #953800;
-      --color-prettylights-syntax-brackethighlighter-unmatched: #82071e;
-      --color-prettylights-syntax-invalid-illegal-text: #f6f8fa;
-      --color-prettylights-syntax-invalid-illegal-bg: #82071e;
-      --color-prettylights-syntax-carriage-return-text: #f6f8fa;
-      --color-prettylights-syntax-carriage-return-bg: #cf222e;
-      --color-prettylights-syntax-string-regexp: #116329;
-      --color-prettylights-syntax-markup-list: #3b2300;
-      --color-prettylights-syntax-markup-heading: #0550ae;
-      --color-prettylights-syntax-markup-italic: #24292f;
-      --color-prettylights-syntax-markup-bold: #24292f;
-      --color-prettylights-syntax-markup-deleted-text: #82071e;
-      --color-prettylights-syntax-markup-deleted-bg: #ffebe9;
-      --color-prettylights-syntax-markup-inserted-text: #116329;
-      --color-prettylights-syntax-markup-inserted-bg: #dafbe1;
-      --color-prettylights-syntax-markup-changed-text: #953800;
-      --color-prettylights-syntax-markup-changed-bg: #ffd8b5;
-      --color-prettylights-syntax-markup-ignored-text: #eaeef2;
-      --color-prettylights-syntax-markup-ignored-bg: #0550ae;
-      --color-prettylights-syntax-meta-diff-range: #8250df;
-      --color-prettylights-syntax-brackethighlighter-angle: #57606a;
-      --color-prettylights-syntax-sublimelinter-gutter-mark: #8c959f;
-      --color-prettylights-syntax-constant-other-reference-link: #0a3069;
-      --color-fg-default: #24292f;
-      --color-fg-muted: #57606a;
-      --color-fg-subtle: #6e7781;
-      --color-canvas-default: #ffffff;
-      --color-canvas-subtle: #f6f8fa;
-      --color-border-default: #d0d7de;
-      --color-border-muted: hsla(210,18%,87%,1);
-      --color-neutral-muted: rgba(175,184,193,0.2);
-      --color-accent-fg: #0969da;
-      --color-accent-emphasis: #0969da;
-      --color-attention-subtle: #fff8c5;
-      --color-danger-fg: #cf222e;
-    }
+export const styleCssFileContent = `.markdown-body {
+    color-scheme: light;
+    --color-prettylights-syntax-comment: #6e7781;
+    --color-prettylights-syntax-constant: #0550ae;
+    --color-prettylights-syntax-entity: #8250df;
+    --color-prettylights-syntax-storage-modifier-import: #24292f;
+    --color-prettylights-syntax-entity-tag: #116329;
+    --color-prettylights-syntax-keyword: #cf222e;
+    --color-prettylights-syntax-string: #0a3069;
+    --color-prettylights-syntax-variable: #953800;
+    --color-prettylights-syntax-brackethighlighter-unmatched: #82071e;
+    --color-prettylights-syntax-invalid-illegal-text: #f6f8fa;
+    --color-prettylights-syntax-invalid-illegal-bg: #82071e;
+    --color-prettylights-syntax-carriage-return-text: #f6f8fa;
+    --color-prettylights-syntax-carriage-return-bg: #cf222e;
+    --color-prettylights-syntax-string-regexp: #116329;
+    --color-prettylights-syntax-markup-list: #3b2300;
+    --color-prettylights-syntax-markup-heading: #0550ae;
+    --color-prettylights-syntax-markup-italic: #24292f;
+    --color-prettylights-syntax-markup-bold: #24292f;
+    --color-prettylights-syntax-markup-deleted-text: #82071e;
+    --color-prettylights-syntax-markup-deleted-bg: #ffebe9;
+    --color-prettylights-syntax-markup-inserted-text: #116329;
+    --color-prettylights-syntax-markup-inserted-bg: #dafbe1;
+    --color-prettylights-syntax-markup-changed-text: #953800;
+    --color-prettylights-syntax-markup-changed-bg: #ffd8b5;
+    --color-prettylights-syntax-markup-ignored-text: #eaeef2;
+    --color-prettylights-syntax-markup-ignored-bg: #0550ae;
+    --color-prettylights-syntax-meta-diff-range: #8250df;
+    --color-prettylights-syntax-brackethighlighter-angle: #57606a;
+    --color-prettylights-syntax-sublimelinter-gutter-mark: #8c959f;
+    --color-prettylights-syntax-constant-other-reference-link: #0a3069;
+    --color-fg-default: #24292f;
+    --color-fg-muted: #57606a;
+    --color-fg-subtle: #6e7781;
+    --color-canvas-default: #ffffff;
+    --color-canvas-subtle: #f6f8fa;
+    --color-border-default: #d0d7de;
+    --color-border-muted: hsla(210, 18%, 87%, 1);
+    --color-neutral-muted: rgba(175, 184, 193, 0.2);
+    --color-accent-fg: #0969da;
+    --color-accent-emphasis: #0969da;
+    --color-attention-subtle: #fff8c5;
+    --color-danger-fg: #cf222e;
   }
 
   .markdown-body {
@@ -108,7 +58,7 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     margin: 0;
     color: var(--color-fg-default);
     background-color: var(--color-canvas-default);
-    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji";
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
     font-size: 16px;
     line-height: 1.5;
     word-wrap: break-word;
@@ -128,7 +78,7 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
   .markdown-body h6:hover .anchor .octicon-link:before {
     width: 16px;
     height: 16px;
-    content: ' ';
+    content: " ";
     display: inline-block;
     background-color: currentColor;
     -webkit-mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' version='1.1' aria-hidden='true'><path fill-rule='evenodd' d='M7.775 3.275a.75.75 0 001.06 1.06l1.25-1.25a2 2 0 112.83 2.83l-2.5 2.5a2 2 0 01-2.83 0 .75.75 0 00-1.06 1.06 3.5 3.5 0 004.95 0l2.5-2.5a3.5 3.5 0 00-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 010-2.83l2.5-2.5a2 2 0 012.83 0 .75.75 0 001.06-1.06 3.5 3.5 0 00-4.95 0l-2.5 2.5a3.5 3.5 0 004.95 4.95l1.25-1.25a.75.75 0 00-1.06-1.06l-1.25 1.25a2 2 0 01-2.83 0z'></path></svg>");
@@ -170,9 +120,9 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
   }
 
   .markdown-body h1 {
-    margin: .67em 0;
+    margin: 0.67em 0;
     font-weight: var(--base-text-weight-semibold, 600);
-    padding-bottom: .3em;
+    padding-bottom: 0.3em;
     font-size: 2em;
     border-bottom: 1px solid var(--color-border-muted);
   }
@@ -226,7 +176,7 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     overflow: hidden;
     background: transparent;
     border-bottom: 1px solid var(--color-border-muted);
-    height: .25em;
+    height: 0.25em;
     padding: 0;
     margin: 24px 0;
     background-color: var(--color-border-default);
@@ -242,31 +192,31 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     line-height: inherit;
   }
 
-  .markdown-body [type=button],
-  .markdown-body [type=reset],
-  .markdown-body [type=submit] {
+  .markdown-body [type="button"],
+  .markdown-body [type="reset"],
+  .markdown-body [type="submit"] {
     -webkit-appearance: button;
   }
 
-  .markdown-body [type=checkbox],
-  .markdown-body [type=radio] {
+  .markdown-body [type="checkbox"],
+  .markdown-body [type="radio"] {
     box-sizing: border-box;
     padding: 0;
   }
 
-  .markdown-body [type=number]::-webkit-inner-spin-button,
-  .markdown-body [type=number]::-webkit-outer-spin-button {
+  .markdown-body [type="number"]::-webkit-inner-spin-button,
+  .markdown-body [type="number"]::-webkit-outer-spin-button {
     height: auto;
   }
 
-  .markdown-body [type=search]::-webkit-search-cancel-button,
-  .markdown-body [type=search]::-webkit-search-decoration {
+  .markdown-body [type="search"]::-webkit-search-cancel-button,
+  .markdown-body [type="search"]::-webkit-search-decoration {
     -webkit-appearance: none;
   }
 
   .markdown-body ::-webkit-input-placeholder {
     color: inherit;
-    opacity: .54;
+    opacity: 0.54;
   }
 
   .markdown-body ::-webkit-file-upload-button {
@@ -312,30 +262,30 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     cursor: pointer;
   }
 
-  .markdown-body details:not([open])>*:not(summary) {
+  .markdown-body details:not([open]) > *:not(summary) {
     display: none !important;
   }
 
   .markdown-body a:focus,
-  .markdown-body [role=button]:focus,
-  .markdown-body input[type=radio]:focus,
-  .markdown-body input[type=checkbox]:focus {
+  .markdown-body [role="button"]:focus,
+  .markdown-body input[type="radio"]:focus,
+  .markdown-body input[type="checkbox"]:focus {
     outline: 2px solid var(--color-accent-fg);
     outline-offset: -2px;
     box-shadow: none;
   }
 
   .markdown-body a:focus:not(:focus-visible),
-  .markdown-body [role=button]:focus:not(:focus-visible),
-  .markdown-body input[type=radio]:focus:not(:focus-visible),
-  .markdown-body input[type=checkbox]:focus:not(:focus-visible) {
+  .markdown-body [role="button"]:focus:not(:focus-visible),
+  .markdown-body input[type="radio"]:focus:not(:focus-visible),
+  .markdown-body input[type="checkbox"]:focus:not(:focus-visible) {
     outline: solid 1px transparent;
   }
 
   .markdown-body a:focus-visible,
-  .markdown-body [role=button]:focus-visible,
-  .markdown-body input[type=radio]:focus-visible,
-  .markdown-body input[type=checkbox]:focus-visible {
+  .markdown-body [role="button"]:focus-visible,
+  .markdown-body input[type="radio"]:focus-visible,
+  .markdown-body input[type="checkbox"]:focus-visible {
     outline: 2px solid var(--color-accent-fg);
     outline-offset: -2px;
     box-shadow: none;
@@ -343,17 +293,17 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
 
   .markdown-body a:not([class]):focus,
   .markdown-body a:not([class]):focus-visible,
-  .markdown-body input[type=radio]:focus,
-  .markdown-body input[type=radio]:focus-visible,
-  .markdown-body input[type=checkbox]:focus,
-  .markdown-body input[type=checkbox]:focus-visible {
+  .markdown-body input[type="radio"]:focus,
+  .markdown-body input[type="radio"]:focus-visible,
+  .markdown-body input[type="checkbox"]:focus,
+  .markdown-body input[type="checkbox"]:focus-visible {
     outline-offset: 0;
   }
 
   .markdown-body kbd {
     display: inline-block;
     padding: 3px 5px;
-    font: 11px ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
+    font: 11px ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
     line-height: 10px;
     color: var(--color-fg-default);
     vertical-align: middle;
@@ -378,7 +328,7 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
 
   .markdown-body h2 {
     font-weight: var(--base-text-weight-semibold, 600);
-    padding-bottom: .3em;
+    padding-bottom: 0.3em;
     font-size: 1.5em;
     border-bottom: 1px solid var(--color-border-muted);
   }
@@ -395,12 +345,12 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
 
   .markdown-body h5 {
     font-weight: var(--base-text-weight-semibold, 600);
-    font-size: .875em;
+    font-size: 0.875em;
   }
 
   .markdown-body h6 {
     font-weight: var(--base-text-weight-semibold, 600);
-    font-size: .85em;
+    font-size: 0.85em;
     color: var(--color-fg-muted);
   }
 
@@ -413,7 +363,7 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     margin: 0;
     padding: 0 1em;
     color: var(--color-fg-muted);
-    border-left: .25em solid var(--color-border-default);
+    border-left: 0.25em solid var(--color-border-default);
   }
 
   .markdown-body ul,
@@ -442,14 +392,14 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
   .markdown-body tt,
   .markdown-body code,
   .markdown-body samp {
-    font-family: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
+    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
     font-size: 12px;
   }
 
   .markdown-body pre {
     margin-top: 0;
     margin-bottom: 0;
-    font-family: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
+    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
     font-size: 12px;
     word-wrap: normal;
   }
@@ -479,11 +429,11 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     content: "";
   }
 
-  .markdown-body>*:first-child {
+  .markdown-body > *:first-child {
     margin-top: 0 !important;
   }
 
-  .markdown-body>*:last-child {
+  .markdown-body > *:last-child {
     margin-bottom: 0 !important;
   }
 
@@ -519,11 +469,11 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     margin-bottom: 16px;
   }
 
-  .markdown-body blockquote>:first-child {
+  .markdown-body blockquote > :first-child {
     margin-top: 0;
   }
 
-  .markdown-body blockquote>:last-child {
+  .markdown-body blockquote > :last-child {
     margin-bottom: 0;
   }
 
@@ -568,7 +518,7 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
   .markdown-body h5 code,
   .markdown-body h6 tt,
   .markdown-body h6 code {
-    padding: 0 .2em;
+    padding: 0 0.2em;
     font-size: inherit;
   }
 
@@ -602,19 +552,19 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     list-style-type: none;
   }
 
-  .markdown-body ol[type=a] {
+  .markdown-body ol[type="a"] {
     list-style-type: lower-alpha;
   }
 
-  .markdown-body ol[type=A] {
+  .markdown-body ol[type="A"] {
     list-style-type: upper-alpha;
   }
 
-  .markdown-body ol[type=i] {
+  .markdown-body ol[type="i"] {
     list-style-type: lower-roman;
   }
 
-  .markdown-body ol[type=I] {
+  .markdown-body ol[type="I"] {
     list-style-type: upper-roman;
   }
 
@@ -622,7 +572,7 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     list-style-type: decimal;
   }
 
-  .markdown-body div>ol:not([type]) {
+  .markdown-body div > ol:not([type]) {
     list-style-type: decimal;
   }
 
@@ -634,12 +584,12 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     margin-bottom: 0;
   }
 
-  .markdown-body li>p {
+  .markdown-body li > p {
     margin-top: 16px;
   }
 
-  .markdown-body li+li {
-    margin-top: .25em;
+  .markdown-body li + li {
+    margin-top: 0.25em;
   }
 
   .markdown-body dl {
@@ -682,11 +632,11 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     background-color: transparent;
   }
 
-  .markdown-body img[align=right] {
+  .markdown-body img[align="right"] {
     padding-left: 20px;
   }
 
-  .markdown-body img[align=left] {
+  .markdown-body img[align="left"] {
     padding-right: 20px;
   }
 
@@ -701,7 +651,7 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     overflow: hidden;
   }
 
-  .markdown-body span.frame>span {
+  .markdown-body span.frame > span {
     display: block;
     float: left;
     width: auto;
@@ -729,7 +679,7 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     clear: both;
   }
 
-  .markdown-body span.align-center>span {
+  .markdown-body span.align-center > span {
     display: block;
     margin: 13px auto 0;
     overflow: hidden;
@@ -747,7 +697,7 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     clear: both;
   }
 
-  .markdown-body span.align-right>span {
+  .markdown-body span.align-right > span {
     display: block;
     margin: 13px 0 0;
     overflow: hidden;
@@ -777,7 +727,7 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     overflow: hidden;
   }
 
-  .markdown-body span.float-right>span {
+  .markdown-body span.float-right > span {
     display: block;
     margin: 13px auto 0;
     overflow: hidden;
@@ -786,7 +736,7 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
 
   .markdown-body code,
   .markdown-body tt {
-    padding: .2em .4em;
+    padding: 0.2em 0.4em;
     margin: 0;
     font-size: 85%;
     white-space: break-spaces;
@@ -811,7 +761,7 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     font-size: 100%;
   }
 
-  .markdown-body pre>code {
+  .markdown-body pre > code {
     padding: 0;
     margin: 0;
     word-break: normal;
@@ -1050,7 +1000,7 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
   .markdown-body g-emoji {
     display: inline-block;
     min-width: 1ch;
-    font-family: "Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     font-size: 1em;
     font-style: normal !important;
     font-weight: var(--base-text-weight-normal, 400);
@@ -1075,7 +1025,7 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
     cursor: pointer;
   }
 
-  .markdown-body .task-list-item+.task-list-item {
+  .markdown-body .task-list-item + .task-list-item {
     margin-top: 4px;
   }
 
@@ -1084,12 +1034,12 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
   }
 
   .markdown-body .task-list-item-checkbox {
-    margin: 0 .2em .25em -1.4em;
+    margin: 0 0.2em 0.25em -1.4em;
     vertical-align: middle;
   }
 
   .markdown-body .contains-task-list:dir(rtl) .task-list-item-checkbox {
-    margin: 0 -1.6em .25em .2em;
+    margin: 0 -1.6em 0.25em 0.2em;
   }
 
   .markdown-body .contains-task-list {
@@ -1110,5 +1060,6 @@ export const styleCssFileContent = `@media (prefers-color-scheme: dark) {
   }
 
   .markdown-body svg {
-      background-color: white;
-  }`;
+    background-color: white;
+  }
+  `;

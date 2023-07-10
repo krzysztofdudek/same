@@ -53,13 +53,9 @@ export namespace Publish {
 
             await this.fileSystem.createDirectory(this.options.outputDirectoryPath);
 
-            if (!(await this.fileSystem.checkIfExists(scriptJsFilePath))) {
-                await this.fileSystem.createOrOverwriteFile(scriptJsFilePath, scriptJsFileContent);
-            }
+            await this.fileSystem.createOrOverwriteFile(scriptJsFilePath, scriptJsFileContent);
 
-            if (!(await this.fileSystem.checkIfExists(styleCssFilePath))) {
-                await this.fileSystem.createOrOverwriteFile(styleCssFilePath, styleCssFileContent);
-            }
+            await this.fileSystem.createOrOverwriteFile(styleCssFilePath, styleCssFileContent);
 
             let images = await this.fileSystem.getFilesRecursively(this.buildOptions.sourceDirectoryPath);
             images = images.filter(
