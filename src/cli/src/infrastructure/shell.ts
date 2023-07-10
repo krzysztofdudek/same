@@ -1,12 +1,21 @@
 import { ChildProcess, exec } from "child_process";
 import { setTimeout } from "timers/promises";
 import { ServiceProvider } from "./service-provider.js";
+import { Logger } from "./logger.js";
 
 export namespace Shell {
     export const iShellServiceKey = "Shell.IShell";
 
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
-        serviceProvider.registerSingleton(iShellServiceKey, () => new Shell());
+        serviceProvider.registerSingleton(
+            iShellServiceKey,
+            () =>
+                new Shell(
+                    serviceProvider
+                        .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
+                        .create(iShellServiceKey)
+                )
+        );
     }
 
     export interface ICommandExecutionResult {
@@ -39,8 +48,22 @@ export namespace Shell {
     }
 
     export class Shell implements IShell {
+        public constructor(private logger: Logger.ILogger) {}
+
         runProcess(command: string): IProcess {
-            const childProcess = exec(command);
+            const childProcess = exec(command, (error, stdout, stderr) => {
+                if (error) {
+                    this.logger.error(error);
+                }
+
+                if (stdout) {
+                    this.logger.trace(stdout);
+                }
+
+                if (stderr) {
+                    this.logger.error(stderr);
+                }
+            });
 
             return new Process(childProcess);
         }

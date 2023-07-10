@@ -4,12 +4,12 @@
     {
       "label": "Serve",
       "type": "shell",
-      "command": "samecli serve"
+      "command": "samecli serve --output-type html"
     },
     {
-      "label": "Build",
+      "label": "Publish",
       "type": "shell",
-      "command": "samecli build"
+      "command": "samecli publish --output-type html"
     }
   ]
 }

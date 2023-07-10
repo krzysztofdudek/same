@@ -6,6 +6,7 @@ import { HttpClient } from "../infrastructure/http-client.js";
 import { Shell } from "../infrastructure/shell.js";
 import { ServiceProvider } from "../infrastructure/service-provider.js";
 import { Logger } from "../infrastructure/logger.js";
+import { Awaiter } from "../infrastructure/awaiter.js";
 
 const toolName = "PlantUml";
 const toolFileName = "plantuml.jar";
@@ -48,7 +49,8 @@ export namespace PlantUml {
                         .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
                         .create(iServerServiceKey),
                     serviceProvider.resolve(iToolServiceKey),
-                    serviceProvider.resolve(iOptionsServiceKey)
+                    serviceProvider.resolve(iOptionsServiceKey),
+                    serviceProvider.resolve(Awaiter.iAwaiterServiceKey)
                 )
         );
     }
@@ -95,7 +97,7 @@ export namespace PlantUml {
     }
 
     export interface IServer {
-        start(): void;
+        start(): Promise<void>;
         stop(): void;
         getSvg(code: string): Promise<string>;
     }
@@ -107,15 +109,30 @@ export namespace PlantUml {
             private shell: Shell.IShell,
             private logger: Logger.ILogger,
             private tool: ITool,
-            private options: IOptions
+            private options: IOptions,
+            private awaiter: Awaiter.IAwaiter
         ) {}
 
-        start() {
+        async start() {
             this.logger.debug("Starting PlantUML server");
 
             this.process = this.shell.runProcess(
                 `java -jar "${this.tool.getJarPath()}" -picoweb:${this.options.serverPort}`
             );
+
+            let response: Response | undefined;
+
+            do {
+                try {
+                    response = await fetch(`http://localhost:${this.options.serverPort}/plantuml`);
+
+                    return;
+                } catch (error) {}
+
+                this.logger.debug("Waiting for PlantUML server startup...");
+
+                await this.awaiter.wait(1000);
+            } while (response?.status !== 200);
         }
 
         stop() {

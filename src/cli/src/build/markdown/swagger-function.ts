@@ -1,26 +1,35 @@
-import { ServiceProvider } from "../../infrastructure/service-provider.js";
 import { Build } from "../../core/build.js";
 import { FileSystem } from "../../infrastructure/file-system.js";
+import { getObject } from "../../infrastructure/functions/getObject.js";
+import { ServiceProvider } from "../../infrastructure/service-provider.js";
 import { MarkdownBuild } from "../markdown.js";
+import { SwaggerBuild } from "../swagger.js";
 import { parameterDependencyIntrospector } from "./parameter-dependency-introspector.js";
 
-const functionName = "import";
+const functionName = "swagger";
 
-export namespace ImportFunction {
+export namespace SwaggerFunction {
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
-        Build.registerFileAnalyzer(serviceProvider, () => new FileAnalyzer());
+        Build.registerFileAnalyzer(
+            serviceProvider,
+            () =>
+                new FileAnalyzer(
+                    serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
+                    serviceProvider.resolve(Build.iOptionsServiceKey)
+                )
+        );
 
         Build.registerFileDependencyIntrospector(serviceProvider, () =>
             parameterDependencyIntrospector(functionName, 0, serviceProvider.resolve(FileSystem.iFileSystemServiceKey))
         );
-        MarkdownBuild.registerFunctionExecutor(
-            serviceProvider,
-            () => new FunctionExecutor(serviceProvider.resolve(FileSystem.iFileSystemServiceKey))
-        );
+
+        MarkdownBuild.registerFunctionExecutor(serviceProvider, () => new FunctionExecutor());
     }
 
     export class FileAnalyzer implements Build.IFileAnalyzer {
         fileExtensions: string[] = ["md"];
+
+        public constructor(private fileSystem: FileSystem.IFileSystem, private buildOptions: Build.IOptions) {}
 
         async getAnalysisResults(
             _path: string,
@@ -34,25 +43,32 @@ export namespace ImportFunction {
             for (let i = 0; i < functions.length; i++) {
                 const _function = functions[i];
 
-                if (_function.functionName === functionName) {
+                if (_function.functionName == functionName) {
                     if (_function.parameters.length === 0 || _function.parameters[0].length === 0) {
                         analysisResults.push(
                             new Build.AnalysisResult(
                                 Build.AnalysisResultType.Error,
-                                "Import function requires first parameter specifying file path.",
+                                "Swagger function requires first parameter specifying file path.",
                                 _function.line,
                                 _function.column
                             )
                         );
                     }
 
-                    if (_function.parameters[0].endsWith(".dsl") && _function.parameters.length !== 2) {
+                    const swaggerFilePath = this.fileSystem.clearPath(
+                        this.buildOptions.sourceDirectoryPath,
+                        _function.parameters[0]
+                    );
+                    const fileExtension = this.fileSystem.getExtension(swaggerFilePath);
+                    const fileContent = await this.fileSystem.readFile(swaggerFilePath);
+
+                    const object = getObject(fileContent, fileExtension);
+
+                    if (!SwaggerBuild.checkIfObjectIsSpecification(object)) {
                         analysisResults.push(
                             new Build.AnalysisResult(
                                 Build.AnalysisResultType.Error,
-                                'Import function of "dsl" file requires second parameters specified with diagram name.',
-                                _function.line,
-                                _function.column
+                                `"${_function.parameters[0]}" is not a valid swagger file.`
                             )
                         );
                     }
@@ -66,17 +82,11 @@ export namespace ImportFunction {
     export class FunctionExecutor implements MarkdownBuild.IFunctionExecutor {
         functionName: string = functionName;
 
-        public constructor(private fileSystem: FileSystem.IFileSystem) {}
-
         async execute(executionContext: MarkdownBuild.FunctionExecutionContext): Promise<string> {
-            const filePath = this.fileSystem.clearPath(
-                this.fileSystem.getDirectory(executionContext.filePath),
-                executionContext.parameters[0]
-            );
+            const filePath = executionContext.parameters[0];
+            const url = `${filePath.substring(0, filePath.lastIndexOf(".") + 1)}html`;
 
-            const fileContent = await this.fileSystem.readFile(filePath);
-
-            return fileContent;
+            return `[<a href="${url}">Link to Swagger UI</a>, <a href="${filePath}">Link to specification</a>]<br /><iframe src="${url}" style="width: 100%; height: 800px"></iframe>`;
         }
     }
 }

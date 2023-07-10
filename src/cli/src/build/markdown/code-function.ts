@@ -2,6 +2,7 @@ import { ServiceProvider } from "../../infrastructure/service-provider.js";
 import { Build } from "../../core/build.js";
 import { FileSystem } from "../../infrastructure/file-system.js";
 import { MarkdownBuild } from "../markdown.js";
+import { parameterDependencyIntrospector } from "./parameter-dependency-introspector.js";
 
 const functionName = "code";
 
@@ -9,9 +10,8 @@ export namespace CodeFunction {
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
         Build.registerFileAnalyzer(serviceProvider, () => new FileAnalyzer());
 
-        Build.registerFileDependencyIntrospector(
-            serviceProvider,
-            () => new FileDependencyIntrospector(serviceProvider.resolve(FileSystem.iFileSystemServiceKey))
+        Build.registerFileDependencyIntrospector(serviceProvider, () =>
+            parameterDependencyIntrospector(functionName, 0, serviceProvider.resolve(FileSystem.iFileSystemServiceKey))
         );
 
         MarkdownBuild.registerFunctionExecutor(
@@ -40,7 +40,7 @@ export namespace CodeFunction {
                         analysisResults.push(
                             new Build.AnalysisResult(
                                 Build.AnalysisResultType.Error,
-                                "Code function requires first parameter specifying file path parameter.",
+                                "Code function requires first parameter specifying file path.",
                                 _function.line,
                                 _function.column
                             )
@@ -59,37 +59,6 @@ export namespace CodeFunction {
             }
 
             return analysisResults;
-        }
-    }
-
-    export class FileDependencyIntrospector implements Build.IFileDependencyIntrospector {
-        fileExtensions: string[] = ["md"];
-
-        public constructor(private fileSystem: FileSystem.IFileSystem) {}
-
-        async getDependencies(path: string, _relativePath: string, content: string): Promise<string[]> {
-            const dependencies: string[] = [];
-
-            const functions = MarkdownBuild.matchAllFunctions(content);
-
-            for (let i = 0; i < functions.length; i++) {
-                const _function = functions[i];
-
-                if (_function.functionName === functionName) {
-                    const dependency = this.fileSystem.clearPath(
-                        this.fileSystem.getDirectory(path),
-                        _function.parameters[0]
-                    );
-
-                    if (dependencies.indexOf(dependency) !== -1) {
-                        continue;
-                    }
-
-                    dependencies.push(dependency);
-                }
-            }
-
-            return dependencies;
         }
     }
 

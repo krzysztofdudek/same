@@ -14,7 +14,7 @@ Praesent vitae libero at nunc malesuada fringilla ut at augue. Etiam bibendum co
 
 ## Import Markdown file
 
-@markdown(markdown.md)
+@markdown(dir/markdown.md)
 
 ## Inline PlantUML diagram
 
@@ -26,7 +26,8 @@ Y -> Z
 
 ## Valid link
 
-[Link](https://www.onet.pl)
+[External Link](https://google.com)
+[Internal Link](./dir/markdown.md)
 
 ## Invalid link
 
@@ -35,3 +36,7 @@ Y -> Z
 ## C# code
 
 @code(HelloWorld.cs, csharp)
+
+## Swagger
+
+@swagger(petstore.json)

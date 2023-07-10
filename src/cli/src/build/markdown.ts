@@ -1,7 +1,7 @@
 import { Build } from "../core/build.js";
 import { ServiceProvider } from "../infrastructure/service-provider.js";
 import { FileSystem } from "../infrastructure/file-system.js";
-import { LinksAnalyzer } from "./markdown/links-analyzer.js";
+import { Link } from "./markdown/link.js";
 import { FileBuilder } from "./markdown/file-builder.js";
 import { CodeFunction } from "./markdown/code-function.js";
 import { ImportFunction } from "./markdown/import-function.js";
@@ -9,16 +9,16 @@ import { UnknownFunctionsAnalyzer } from "./markdown/unknown-functions-analyzer.
 import { PlantUmlFunction } from "./markdown/plantuml-function.js";
 import { StructurizrFunction } from "./markdown/structurizr-function.js";
 import { MarkdownFunction } from "./markdown/markdown-function.js";
+import { SwaggerFunction } from "./markdown/swagger-function.js";
+import { BuildExtension } from "./markdown/build-extension.js";
+import { Publish } from "../publish/publish-static-files.js";
+import { Manifest } from "../core/manifest.js";
 
 export namespace MarkdownBuild {
     export const iFunctionExecutorServiceKey = "MarkdownBuild.IFunctionExecutor";
+    export const iPostProcessorServiceKey = "MarkdownBuild.IPostProcessor";
 
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
-        Build.registerFileAnalyzer(
-            serviceProvider,
-            () => new LinksAnalyzer(serviceProvider.resolve(FileSystem.iFileSystemServiceKey))
-        );
-
         Build.registerFileAnalyzer(
             serviceProvider,
             () =>
@@ -33,15 +33,29 @@ export namespace MarkdownBuild {
                 new FileBuilder(
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
                     serviceProvider.resolve(Build.iOptionsServiceKey),
-                    serviceProvider.resolveMany<IFunctionExecutor>(iFunctionExecutorServiceKey)
+                    serviceProvider.resolveMany<IFunctionExecutor>(iFunctionExecutorServiceKey),
+                    serviceProvider.resolveMany<IPostProcessor>(iPostProcessorServiceKey)
                 )
         );
 
+        Build.registerBuildExtension(
+            serviceProvider,
+            () =>
+                new BuildExtension(
+                    serviceProvider.resolve(Publish.iOptionsServiceKey),
+                    serviceProvider.resolve(Build.iOptionsServiceKey),
+                    serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
+                    serviceProvider.resolve(Manifest.iRepositoryServiceKey)
+                )
+        );
+
+        Link.register(serviceProvider);
         CodeFunction.register(serviceProvider);
         ImportFunction.register(serviceProvider);
         PlantUmlFunction.register(serviceProvider);
         StructurizrFunction.register(serviceProvider);
         MarkdownFunction.register(serviceProvider);
+        SwaggerFunction.register(serviceProvider);
     }
 
     export function registerFunctionExecutor(
@@ -51,11 +65,19 @@ export namespace MarkdownBuild {
         serviceProvider.registerSingleton(iFunctionExecutorServiceKey, factory);
     }
 
+    export function registerPostProcessor(
+        serviceProvider: ServiceProvider.IServiceProvider,
+        factory: () => IPostProcessor
+    ) {
+        serviceProvider.registerSingleton(iPostProcessorServiceKey, factory);
+    }
+
     export class FunctionExecutionContext {
         public constructor(
             private _parameters: string[],
             private _filePath: string,
-            private _relativeFilePath: string
+            private _relativeFilePath: string,
+            private _fileExtension: string
         ) {}
 
         public get parameters() {
@@ -69,12 +91,20 @@ export namespace MarkdownBuild {
         public get relativeFilePath() {
             return this._relativeFilePath;
         }
+
+        public get fileExtension() {
+            return this._fileExtension;
+        }
     }
 
     export interface IFunctionExecutor {
         functionName: string;
 
         execute(executionContext: FunctionExecutionContext): Promise<string>;
+    }
+
+    export interface IPostProcessor {
+        execute(chunks: string[]): Promise<void>;
     }
 
     const functionRegExp = /@(\w+)\((.*)\)/g;

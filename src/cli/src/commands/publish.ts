@@ -5,6 +5,7 @@ import { Toolset } from "../core/toolset.js";
 import { Build } from "../core/build.js";
 import { PlantUml } from "../tools/plant-uml.js";
 import { Publish } from "../publish/publish-static-files.js";
+import { Logger } from "../infrastructure/logger.js";
 
 export namespace PublishCommand {
     export const iCommandServiceKey = "PublishCommand.ICommand";
@@ -22,7 +23,10 @@ export namespace PublishCommand {
                     serviceProvider.resolve(PlantUml.iServerServiceKey),
                     serviceProvider.resolve(Build.iBuilderServiceKey),
                     serviceProvider.resolve(Build.iContextServiceKey),
-                    serviceProvider.resolve(Publish.iOptionsServiceKey)
+                    serviceProvider.resolve(Publish.iOptionsServiceKey),
+                    serviceProvider
+                        .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
+                        .create(iCommandServiceKey)
                 )
         );
     }
@@ -52,7 +56,8 @@ export namespace PublishCommand {
             private plantUmlServer: PlantUml.IServer,
             private builder: Build.IBuilder,
             private context: Build.IContext,
-            private publishOptions: Publish.IOptions
+            private publishOptions: Publish.IOptions,
+            private logger: Logger.ILogger
         ) {}
 
         async execute(options: IOptions): Promise<void> {
@@ -77,11 +82,13 @@ export namespace PublishCommand {
                 return;
             }
 
-            this.plantUmlServer.start();
+            await this.plantUmlServer.start();
 
             try {
                 await this.context.analyzeCompletely();
                 await this.builder.build();
+            } catch (error) {
+                this.logger.error(error);
             } finally {
                 this.plantUmlServer.stop();
             }

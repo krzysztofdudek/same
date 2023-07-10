@@ -10,7 +10,8 @@ export class FileBuilder implements Build.IFileBuilder {
     public constructor(
         private fileSystem: FileSystem.IFileSystem,
         private buildOptions: Build.IOptions,
-        private functionExecutors: MarkdownBuild.IFunctionExecutor[]
+        private functionExecutors: MarkdownBuild.IFunctionExecutor[],
+        private postProcessors: MarkdownBuild.IPostProcessor[]
     ) {}
 
     async build(context: Build.FileBuildContext): Promise<void> {
@@ -28,7 +29,12 @@ export class FileBuilder implements Build.IFileBuilder {
 
             if (functionExecutor) {
                 const functionResult = await functionExecutor.execute(
-                    new MarkdownBuild.FunctionExecutionContext(_function.parameters, context.path, context.relativePath)
+                    new MarkdownBuild.FunctionExecutionContext(
+                        _function.parameters,
+                        context.path,
+                        context.relativePath,
+                        context.extension
+                    )
                 );
 
                 chunks.push(functionResult);
@@ -37,19 +43,24 @@ export class FileBuilder implements Build.IFileBuilder {
 
         chunks.push(context.content.substring(lastIndex));
 
+        for (let i = 0; i < this.postProcessors.length; i++) {
+            const postProcessor = this.postProcessors[i];
+
+            await postProcessor.execute(chunks);
+        }
+
         const markdownRenderedContent = chunks.join("");
 
         const md = new MarkdownIt({
             html: true,
         });
 
-        const htmlRenderedContext = md.render(markdownRenderedContent);
-        const fileExtension = this.fileSystem.getExtension(context.relativePath);
-        const htmlFilePath = this.fileSystem.clearPath(
+        const render = md.render(markdownRenderedContent);
+        const outputFilePath = this.fileSystem.clearPath(
             this.buildOptions.outputDirectoryPath,
-            context.relativePath.substring(0, context.relativePath.length - fileExtension.length) + "html"
+            context.relativePath.substring(0, context.relativePath.length - context.extension.length) + "html"
         );
 
-        await this.fileSystem.createOrOverwriteFile(htmlFilePath, htmlRenderedContext);
+        await this.fileSystem.createOrOverwriteFile(outputFilePath, render);
     }
 }

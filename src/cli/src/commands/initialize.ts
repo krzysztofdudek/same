@@ -69,7 +69,8 @@ const vsCodeExtensionsFileContent = `{
     "systemticks.c4-dsl-extension",
     "Gruntfuggly.todo-tree",
     "DavidAnson.vscode-markdownlint",
-    "Arjun.swagger-viewer"
+    "Arjun.swagger-viewer",
+    "ms-vscode.live-server"
   ]
 }
 `;

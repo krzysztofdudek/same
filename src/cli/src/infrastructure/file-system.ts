@@ -26,9 +26,13 @@ export namespace FileSystem {
         getDirectory(path: string): string;
         getName(path: string): string;
         watchRecursive(path: string, callback: (path: string) => void): void;
+        copy(sourcePath: string, destinationPath: string): Promise<void>;
     }
 
     export class FileSystem implements IFileSystem {
+        async copy(sourcePath: string, destinationPath: string): Promise<void> {
+            await fsPromises.copyFile(sourcePath, destinationPath);
+        }
         watchRecursive(path: string, callback: (path: string) => void): void {
             fs.watch(
                 path,

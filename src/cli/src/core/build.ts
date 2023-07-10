@@ -105,14 +105,25 @@ export namespace Build {
     }
 
     export class FileBuildContext {
-        public constructor(private _path: string, private _relativePath: string, private _content: string) {}
+        public constructor(
+            private _path: string,
+            private _relativePath: string,
+            private _extension: string,
+            private _content: string
+        ) {}
 
         public get path() {
             return this._path;
         }
+
         public get relativePath() {
             return this._relativePath;
         }
+
+        public get extension() {
+            return this._extension;
+        }
+
         public get content() {
             return this._content;
         }
@@ -272,11 +283,22 @@ export namespace Build {
                 return;
             }
 
+            const fileContent = await this.fileSystem.readFile(filePath);
+            const hash = createHash("sha512").update(fileContent, "utf-8").digest("base64");
+
+            if (this.files.find((x) => x.path === filePath && x.hash === hash)) {
+                return;
+            }
+
             const compactFilePath = this.compactPath(filePath);
 
             this.logger.trace(`Processing file: ${compactFilePath}`);
 
-            const { fileExtension, dependencies, hash, analysisResults } = await this.gatherAnalysisArtifacts(filePath);
+            const fileExtension = this.fileSystem.getExtension(filePath);
+            const dependencies = await this.gatherDependencies(fileExtension, filePath, fileContent);
+            const analysisResults = await this.gatherAnalysisResults(fileExtension, filePath, fileContent);
+
+            await this.checkIfDependenciesExist(dependencies, analysisResults);
 
             this.printAnalysisResults(analysisResults, compactFilePath);
 
@@ -292,20 +314,6 @@ export namespace Build {
             this.updateFileInformation(file);
 
             await this.notifyWatchersOnFileAnalyzed(file);
-        }
-
-        private async gatherAnalysisArtifacts(filePath: string) {
-            const fileExtension = this.fileSystem.getExtension(filePath);
-            const fileContent = await this.fileSystem.readFile(filePath);
-
-            const dependencies = await this.gatherDependencies(fileExtension, filePath, fileContent);
-            const analysisResults = await this.gatherAnalysisResults(fileExtension, filePath, fileContent);
-
-            await this.checkIfDependenciesExist(dependencies, analysisResults);
-
-            const hash = createHash("sha512").update(fileContent, "utf-8").digest("base64");
-
-            return { fileExtension, dependencies, hash, analysisResults };
         }
 
         private async notifyWatchersOnFileDeleted(filePath: string) {
@@ -456,7 +464,7 @@ export namespace Build {
         }
 
         async build(): Promise<boolean> {
-            this.logger.info("Running complete build");
+            this.logger.debug("Running build");
 
             const wereDetectedErrors = this.fileEntries.find(
                 (x) => x.file.analysisResults.find((y) => y.type === AnalysisResultType.Error) !== undefined
@@ -485,7 +493,7 @@ export namespace Build {
                 await asyncForeach(buildExtensions, async (x) => await x.onFileBuilt(fileEntry.file));
             }
 
-            this.logger.info("Build succeeded");
+            this.logger.debug("Build succeeded");
 
             return true;
         }
@@ -541,7 +549,9 @@ export namespace Build {
 
                     const fileContent = await this.fileSystem.readFile(fileEntry.file.path);
 
-                    await fileBuilder.build(new FileBuildContext(fileEntry.file.path, relativePath, fileContent));
+                    await fileBuilder.build(
+                        new FileBuildContext(fileEntry.file.path, relativePath, fileEntry.file.extension, fileContent)
+                    );
                 }
 
                 fileEntry.builtHash = hash;
