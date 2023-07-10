@@ -60,7 +60,9 @@ export class FileBuilder implements Build.IFileBuilder {
             this.buildOptions.outputDirectoryPath,
             context.relativePath.substring(0, context.relativePath.length - context.extension.length) + "html"
         );
+        const outputDirectoryPath = this.fileSystem.getDirectory(outputFilePath);
 
+        await this.fileSystem.createDirectory(outputDirectoryPath);
         await this.fileSystem.createOrOverwriteFile(outputFilePath, render);
     }
 }

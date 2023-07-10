@@ -12,7 +12,8 @@ export namespace SwaggerBuild {
             () =>
                 new FileBuilder(
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
-                    serviceProvider.resolve(Build.iOptionsServiceKey)
+                    serviceProvider.resolve(Build.iOptionsServiceKey),
+                    serviceProvider.resolve(Publish.iOptionsServiceKey)
                 )
         );
 
@@ -31,7 +32,11 @@ export namespace SwaggerBuild {
         fileExtensions: string[] = ["json", "yaml", "yml"];
         outputType: string = "html";
 
-        public constructor(private fileSystem: FileSystem.IFileSystem, private buildOptions: Build.IOptions) {}
+        public constructor(
+            private fileSystem: FileSystem.IFileSystem,
+            private buildOptions: Build.IOptions,
+            private publishOptions: Publish.IOptions
+        ) {}
 
         async build(context: Build.FileBuildContext): Promise<void> {
             const fileContent = await this.fileSystem.readFile(context.path);
@@ -42,7 +47,13 @@ export namespace SwaggerBuild {
                 return;
             }
 
-            const render = swagger.generateHTML(object);
+            let render = swagger.generateHTML(object);
+
+            const baseUrl = this.publishOptions.createBaseUrl();
+            render = render.replace("./swagger-ui.css", `${baseUrl}/swagger-ui.css`);
+            render = render.replace("./swagger-ui-bundle.js", `${baseUrl}/swagger-ui-bundle.js`);
+            render = render.replace("./swagger-ui-standalone-preset.js", `${baseUrl}/swagger-ui-standalone-preset.js`);
+            render = render.replace("./swagger-ui-init.js", `${baseUrl}/swagger-ui-init.js`);
 
             const outputFilePath = this.fileSystem.clearPath(
                 this.buildOptions.outputDirectoryPath,

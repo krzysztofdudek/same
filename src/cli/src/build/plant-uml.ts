@@ -1,4 +1,5 @@
 import { Build } from "../core/build.js";
+import { matchAll } from "../core/regExp.js";
 import { FileSystem } from "../infrastructure/file-system.js";
 import { Logger } from "../infrastructure/logger.js";
 import { ServiceProvider } from "../infrastructure/service-provider.js";
@@ -35,8 +36,6 @@ export namespace PlantUmlBuild {
         ) {}
 
         async build(context: Build.FileBuildContext): Promise<void> {
-            let position = 0;
-
             const outputDirectoryPath = this.fileSystem.clearPath(
                 this.buildOptions.outputDirectoryPath,
                 context.relativePath
@@ -45,21 +44,24 @@ export namespace PlantUmlBuild {
             await this.fileSystem.delete(outputDirectoryPath);
             await this.fileSystem.createDirectory(outputDirectoryPath);
 
-            for (let i = 1; ; i++) {
-                const startIndex = context.content.indexOf(startumlString, position);
+            const startMatches = matchAll(context.content, /@start\w+/gm);
 
-                if (startIndex === -1) {
-                    break;
+            for (let i = 0; i < startMatches.length; i++) {
+                const startMatch = startMatches[i];
+                const startIndex = startMatch.index!;
+                let fragment = context.content.substring(startIndex);
+                const endMatch = fragment.match(/@end\w+/gm);
+
+                if (endMatch) {
+                    const endIndex = endMatch.index!;
+                    fragment = fragment.substring(0, endIndex) + endMatch[0];
                 }
 
-                const endIndex = context.content.indexOf(endumlString, position);
-                position = endIndex + endumlString.length;
+                this.logger.debug(`Rendering diagram: ${i + 1}`);
 
-                this.logger.debug(`Rendering diagram: ${i}`);
+                const svg = await this.plantUmlServer.getSvg(fragment);
 
-                const svg = await this.plantUmlServer.getSvg(context.content.substring(startIndex, position));
-
-                const outputFilePath = this.fileSystem.clearPath(outputDirectoryPath, `${i}.svg`);
+                const outputFilePath = this.fileSystem.clearPath(outputDirectoryPath, `${i + 1}.svg`);
 
                 await this.fileSystem.createOrOverwriteFile(outputFilePath, svg);
             }

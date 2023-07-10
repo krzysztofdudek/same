@@ -5,32 +5,11 @@
   "markdown.preview.scrollPreviewWithEditor": false,
   "html.validate.scripts": false,
   "todo-tree.regex.regexCaseSensitive": true,
-  "todo-tree.general.tags": [
-      "@todo",
-      "@issue",
-      "@question"
-  ],
+  "todo-tree.general.tags": ["@todo", "@issue", "@question"],
   "todo-tree.tree.showCountsInTree": true,
   "todo-tree.tree.groupedByTag": true,
   "todo-tree.general.statusBar": "tags",
   "extensions.ignoreRecommendations": false,
   "c4.diagram.plantuml.enabled": true,
-  "cSpell.words": [
-    "enduml",
-    "plantuml",
-    "puml",
-    "startuml",
-    "startsalt",
-    "endsalt",
-    "startgantt",
-    "endgantt",
-    "startmindmap",
-    "endmindmap",
-    "startwbs",
-    "endwbs",
-    "startjson",
-    "endjson",
-    "startyaml",
-    "endyaml"
-  ]
+  "cSpell.words": ["enduml", "plantuml", "puml", "startuml", "startsalt", "endsalt", "startgantt", "endgantt", "startmindmap", "endmindmap", "startwbs", "endwbs", "startjson", "endjson", "startyaml", "endyaml", "breakpage"]
 }

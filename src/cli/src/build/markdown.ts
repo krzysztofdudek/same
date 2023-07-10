@@ -13,6 +13,9 @@ import { SwaggerFunction } from "./markdown/swagger-function.js";
 import { BuildExtension } from "./markdown/build-extension.js";
 import { Publish } from "../publish/publish-static-files.js";
 import { Manifest } from "../core/manifest.js";
+import { handleAllMatches, matchAll } from "../core/regExp.js";
+import { BreakPageFunction } from "./markdown/break-page-function.js";
+import { ImageFunction } from "./markdown/image-function.js";
 
 export namespace MarkdownBuild {
     export const iFunctionExecutorServiceKey = "MarkdownBuild.IFunctionExecutor";
@@ -56,6 +59,8 @@ export namespace MarkdownBuild {
         StructurizrFunction.register(serviceProvider);
         MarkdownFunction.register(serviceProvider);
         SwaggerFunction.register(serviceProvider);
+        BreakPageFunction.register(serviceProvider);
+        ImageFunction.register(serviceProvider);
     }
 
     export function registerFunctionExecutor(
@@ -149,36 +154,6 @@ export namespace MarkdownBuild {
         }
 
         return result;
-    }
-
-    export async function handleAllMatches(
-        content: string,
-        regExp: RegExp,
-        handle: (match: RegExpMatchArray, line: number, column: number) => Promise<void>
-    ) {
-        const matches = matchAll(content, regExp);
-
-        for (let i = 0; i < matches.length; i++) {
-            const match = matches[i];
-
-            const fragment = content.substring(0, match.index);
-            const line = (fragment.match(/\n/g)?.length ?? 0) + 1;
-            const column = fragment.length - fragment.lastIndexOf("\n");
-
-            await handle(match, line, column);
-        }
-    }
-
-    export function matchAll(content: string, regExp: RegExp): RegExpMatchArray[] {
-        const matchesIterator = content.matchAll(regExp);
-        let match: IteratorResult<RegExpMatchArray, any>;
-        const matches: RegExpMatchArray[] = [];
-
-        while ((match = matchesIterator.next()).done !== true) {
-            matches.push(match.value);
-        }
-
-        return matches;
     }
 
     function processMatchedFunction(match: RegExpMatchArray): {

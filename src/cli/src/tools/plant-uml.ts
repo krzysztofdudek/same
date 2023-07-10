@@ -95,7 +95,7 @@ export namespace PlantUml {
             return this.fileSystem.clearPath(this.toolsOptions.toolsDirectoryPath, toolFileName);
         }
     }
-
+    ``;
     export interface IServer {
         start(): Promise<void>;
         stop(): void;
@@ -119,6 +119,10 @@ export namespace PlantUml {
             this.process = this.shell.runProcess(
                 `java -jar "${this.tool.getJarPath()}" -picoweb:${this.options.serverPort}`
             );
+
+            process.on("SIGINT", () => {
+                this.stop();
+            });
 
             let response: Response | undefined;
 

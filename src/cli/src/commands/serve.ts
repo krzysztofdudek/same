@@ -10,6 +10,7 @@ import { WebSocketServer } from "ws";
 import { FileSystem } from "../infrastructure/file-system.js";
 import { Logger } from "../infrastructure/logger.js";
 import swagger from "swagger-ui-express";
+import { exit } from "process";
 
 export namespace ServeCommand {
     export const iCommandServiceKey = "ServeCommand.ICommand";
@@ -132,6 +133,13 @@ export namespace ServeCommand {
                     client.send("refresh");
                 });
             };
+
+            process.on("SIGINT", () => {
+                wsServer.close();
+                server.close();
+
+                exit(0);
+            });
         }
 
         private runHotReload() {

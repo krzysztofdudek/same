@@ -32,7 +32,7 @@ export namespace SwaggerFunction {
         public constructor(private fileSystem: FileSystem.IFileSystem, private buildOptions: Build.IOptions) {}
 
         async getAnalysisResults(
-            _path: string,
+            path: string,
             _relativePath: string,
             content: string
         ): Promise<Build.AnalysisResult[]> {
@@ -57,6 +57,7 @@ export namespace SwaggerFunction {
 
                     const swaggerFilePath = this.fileSystem.clearPath(
                         this.buildOptions.sourceDirectoryPath,
+                        this.fileSystem.getDirectory(path).substring(this.buildOptions.sourceDirectoryPath.length + 1),
                         _function.parameters[0]
                     );
                     const fileExtension = this.fileSystem.getExtension(swaggerFilePath);

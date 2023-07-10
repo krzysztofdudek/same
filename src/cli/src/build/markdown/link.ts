@@ -1,4 +1,5 @@
 import { Build } from "../../core/build.js";
+import { handleAllMatches, matchAll } from "../../core/regExp.js";
 import { FileSystem } from "../../infrastructure/file-system.js";
 import { ServiceProvider } from "../../infrastructure/service-provider.js";
 import { MarkdownBuild } from "../markdown.js";
@@ -29,7 +30,7 @@ export namespace Link {
         ): Promise<Build.AnalysisResult[]> {
             const analysisResults: Build.AnalysisResult[] = [];
 
-            await MarkdownBuild.handleAllMatches(content, /\[([^\]]+)\]\(([^)]+)\)/g, async (match, line, column) => {
+            await handleAllMatches(content, /\[([^\]]+)\]\(([^)]+)\)/g, async (match, line, column) => {
                 const resource = match[2];
 
                 if (!resource.match(/\w+:\/\//)) {
@@ -60,7 +61,7 @@ export namespace Link {
         async execute(chunks: string[]): Promise<void> {
             for (let i = 0; i < chunks.length; i++) {
                 let chunk = chunks[i];
-                const matches = MarkdownBuild.matchAll(chunk, /\[([^\]]+)\]\(([^)]+.md)\)/g);
+                const matches = matchAll(chunk, /\[([^\]]+)\]\(([^)]+.md)\)/g);
                 let indexDiff = 0;
 
                 for (let j = 0; j < matches.length; j++) {

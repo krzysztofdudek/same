@@ -4,12 +4,22 @@
     {
       "label": "Serve",
       "type": "shell",
-      "command": "samecli serve --output-type html"
+      "command": "samecli serve --output-type html",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
     },
     {
       "label": "Publish",
       "type": "shell",
-      "command": "samecli publish --output-type html"
+      "command": "samecli publish --output-type html",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
     }
   ]
 }

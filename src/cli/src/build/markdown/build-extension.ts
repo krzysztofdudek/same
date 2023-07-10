@@ -31,39 +31,35 @@ export class BuildExtension implements Build.IBuildExtension {
         let fileContent = await this.fileSystem.readFile(sourcePath);
         const manifest = <Manifest.Manifest>await this.manifestRepository.load();
 
-        const header = [
-            manifest.name,
-            ...file.compactPath
-                .split("/")
-                .map((x) => x.trim().substring(0, x.trim().lastIndexOf(".")))
-                .filter((x) => x.length > 1 && x !== "index")
-                .map((x) =>
-                    x
-                        .split("-")
-                        .map((x) => x.charAt(0).toUpperCase() + x.slice(1))
-                        .join(" ")
-                ),
-        ].join(" > ");
+        const fragments = file.compactPath
+            .split("/")
+            .map((x) => x.trim())
+            .map((x) => (x.lastIndexOf(".") !== -1 ? x.substring(0, x.lastIndexOf(".")) : x))
+            .filter((x) => x.length > 1 && x !== "index")
+            .map((x) =>
+                x
+                    .split("-")
+                    .map((x) => x.charAt(0).toUpperCase() + x.slice(1))
+                    .join(" ")
+            );
+
+        const header = [manifest.name, ...fragments].join(" > ");
 
         fileContent = `<html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="${this.publishOptions.hostProtocol}://${this.publishOptions.hostName}:${
-            this.publishOptions.hostPort
-        }/styles.css">
+    <link rel="stylesheet" href="${this.publishOptions.createBaseUrl()}/styles.css">
     <title>${manifest.name}</title>
     <style>
         body {
             padding: 1em;
         }
     </style>
-    <script src="${this.publishOptions.hostProtocol}://${this.publishOptions.hostName}:${
-            this.publishOptions.hostPort
-        }/script.js" type="text/javascript"></script>
+    <script src="${this.publishOptions.createBaseUrl()}/script.js" type="text/javascript"></script>
 </head>
 <body class="markdown-body">
-    ${fileContent.indexOf("h1") < 0 ? `<h1>${header}</h1>` : ""}
+    <h1>${header}</h1>
 ${fileContent}
 </body>
 </html>`;

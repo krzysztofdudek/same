@@ -480,6 +480,8 @@ export namespace Build {
 
             await asyncForeach(buildExtensions, async (x) => await x.onBuildStarted());
 
+            await this.fileSystem.createDirectory(this.options.outputDirectoryPath);
+
             const fileEntries = this.fileEntries.filter((x) => x.builtHash !== x.file.hash);
             for (let i = 0; i < fileEntries.length; i++) {
                 const fileEntry = fileEntries[i];

@@ -54,7 +54,8 @@ const vsCodeSettingsFileContent = `{
     "startjson",
     "endjson",
     "startyaml",
-    "endyaml"
+    "endyaml",
+    "breakpage"
   ]
 }`;
 
