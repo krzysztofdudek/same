@@ -1,34 +1,38 @@
-import { spawn } from 'child_process';
-import { setTimeout } from 'timers/promises';
+import { Toolset } from "../core/toolset.js";
+import { Logger } from "../infrastructure/logger.js";
+import { ServiceProvider } from "../infrastructure/service-provider.js";
+import { Shell } from "../infrastructure/shell.js";
 
 export namespace Java {
-    export async function check() {
-        const checkProcess = spawn('java', [ '-version' ]);
+    export const toolServiceKey = "Java.Tool";
 
-        let version: string | null = null;
+    export function register(serviceProvider: ServiceProvider.IServiceProvider) {
+        serviceProvider.registerSingletonMany(
+            [Toolset.iToolServiceKey, toolServiceKey],
+            () =>
+                new Tool(
+                    serviceProvider.resolve(Shell.iShellServiceKey),
+                    serviceProvider
+                        .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
+                        .create(toolServiceKey)
+                )
+        );
+    }
 
-        checkProcess.stderr.on('data', function (data) {
-            const matches = /\d+\.\d+\.\d+/g.exec(data);
+    export class Tool implements Toolset.ITool {
+        public constructor(private shell: Shell.IShell, private logger: Logger.ILogger) {}
 
-            if ((matches?.length ?? 0) > 0) {
-                version = matches![0];
+        async configure(): Promise<void> {
+            const result = await this.shell.executeCommand("java -version");
+            const matches = /[2-9]\d\.\d+\.\d+/g.exec(result.stderr);
+
+            if ((matches?.length ?? 0) === 0) {
+                this.logger.error("Installation of Java 20+ is required");
+
+                throw new Error();
             }
-        });
 
-        checkProcess.on('exit', () => {
-            if (version === null) {
-                version = '0.0.0';
-            }
-        })
-
-        while (version === null) {
-            await setTimeout(10);
-        }
-
-        const matches = /[2-9]\d\.\d+\.\d+/g.exec(version);
-
-        if ((matches?.length ?? 0) === 0) {
-            throw new Error('Installation of Java 20+ is required.');
+            this.logger.debug("Java 20+ is installed");
         }
     }
 }

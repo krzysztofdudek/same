@@ -1,44 +1,73 @@
-import chalk from 'chalk';
+import { HttpClient } from "../infrastructure/http-client.js";
+import { Logger } from "../infrastructure/logger.js";
+import { ServiceProvider } from "../infrastructure/service-provider.js";
 
-class FetchingError { }
+export namespace GitHub {
+    export const iGitHubServiceKey = "GitHub.IGitHub";
 
-class ResponseParsingError { }
-
-interface Release {
-    tag_name: string;
-    assets: Asset[];
-}
-
-interface Asset {
-    name: string;
-    browser_download_url: string;
-}
-
-interface VersionDescriptor {
-    name: string;
-    asset: string;
-    url: string;
-}
-
-export async function getLatestRelease(resource: string, owner: string, repository: string, asset: RegExp): Promise<VersionDescriptor> {
-    const response = await fetch(`https://api.github.com/repos/${owner}/${repository}/releases/latest`);
-
-    if (!response.ok) {
-        console.log(chalk.redBright(`Error occurred while fetching latest ${resource} release.`));
-        console.log(chalk.redBright(`Response: ${await response.text()}`));
-
-        throw new FetchingError();
+    export function register(serviceProvider: ServiceProvider.IServiceProvider) {
+        serviceProvider.registerSingleton(
+            iGitHubServiceKey,
+            () =>
+                new GitHub(
+                    serviceProvider.resolve(HttpClient.iHttpClientServiceKey),
+                    serviceProvider
+                        .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
+                        .create(iGitHubServiceKey)
+                )
+        );
     }
 
-    const release = (await response.json()) as Release;
-    const assetObject = release.assets.find(x => asset.test(x.name));
-    const url = assetObject?.browser_download_url;
+    class FetchingError {}
 
-    if (!url) {
-        console.log(chalk.redBright(`Error occurred while parsing response of latest ${resource} release.`));
+    class ResponseParsingError {}
 
-        throw new ResponseParsingError();
+    interface Release {
+        tag_name: string;
+        assets: Asset[];
     }
 
-    return { name: release.tag_name, asset: assetObject.name, url: url };
+    interface Asset {
+        name: string;
+        browser_download_url: string;
+    }
+
+    interface VersionDescriptor {
+        name: string;
+        asset: string;
+        url: string;
+    }
+
+    export interface IGitHub {
+        getLatestRelease(owner: string, repository: string, asset: RegExp): Promise<VersionDescriptor>;
+    }
+
+    export class GitHub implements IGitHub {
+        public constructor(private httpClient: HttpClient.IHttpClient, private logger: Logger.ILogger) {}
+
+        async getLatestRelease(owner: string, repository: string, asset: RegExp): Promise<VersionDescriptor> {
+            let release: Release;
+
+            try {
+                release = await this.httpClient.get<Release>(
+                    `https://api.github.com/repos/${owner}/${repository}/releases/latest`
+                );
+            } catch (error) {
+                this.logger.error(`Error occurred while fetching GitHub latest release.`, error);
+
+                throw new FetchingError();
+            }
+
+            const assetObject = release.assets.find((x) => asset.test(x.name));
+            const url = assetObject?.browser_download_url;
+
+            if (!url) {
+                this.logger.error(`Error occurred while parsing GitHub latest release.`);
+
+                throw new ResponseParsingError();
+            }
+
+            return { name: release.tag_name, asset: assetObject.name, url: url };
+        }
+    }
 }

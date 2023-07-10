@@ -1,79 +1,102 @@
-import path from 'path';
-import { createDirectoryIfNotExists as createDirectoryIfNotExists, deleteIfExists } from '../core/file-system.js';
-import downloadFile from "../core/download-file.js";
-import { getLatestRelease } from '../core/github.js';
-import setupTool from '../core/setup-tool.js';
-import decompress from 'decompress';
-import { ToolBase } from '../core/tool.js';
-import { exec } from "child_process";
-import { setTimeout } from "timers/promises";
-import fsPromises from 'fs/promises';
-import fs from 'fs';
+import { GitHub } from "../core/github.js";
+import { Toolset } from "../core/toolset.js";
+import { Awaiter } from "../infrastructure/awaiter.js";
+import { FileSystem } from "../infrastructure/file-system.js";
+import { HttpClient } from "../infrastructure/http-client.js";
+import { Logger } from "../infrastructure/logger.js";
+import { ServiceProvider } from "../infrastructure/service-provider.js";
+import { Shell } from "../infrastructure/shell.js";
 
 const toolName = "Structurizr";
-const toolFileName = 'structurizr.zip';
+const toolFileName = "structurizr.zip";
 const decompressedDirectory = "structurizr";
 
 export namespace Structurizr {
-    export async function configure(toolsDirectoryPath: string): Promise<Tool> {
-        const tool = new Tool(toolsDirectoryPath);
+    export const toolServiceKey = "Structurizr.Tool";
 
-        await tool.configure();
-
-        return tool;
+    export function register(serviceProvider: ServiceProvider.IServiceProvider) {
+        serviceProvider.registerSingletonMany(
+            [Toolset.iToolServiceKey, toolServiceKey],
+            () =>
+                new Tool(
+                    serviceProvider.resolve(Toolset.iOptionsServiceKey),
+                    serviceProvider.resolve(GitHub.iGitHubServiceKey),
+                    serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
+                    serviceProvider.resolve(Toolset.iToolsetVersionsServiceKey),
+                    serviceProvider.resolve(HttpClient.iHttpClientServiceKey),
+                    serviceProvider
+                        .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
+                        .create(toolServiceKey),
+                    serviceProvider.resolve(Shell.iShellServiceKey),
+                    serviceProvider.resolve(Awaiter.iAwaiterServiceKey)
+                )
+        );
     }
 
-    export class Tool extends ToolBase {
-        private toolsDirectoryPath: string;
+    export interface ITool extends Toolset.ITool {
+        generateDiagrams(filePath: string, outputDirectoryPath: string): Promise<void>;
+    }
 
-        public constructor(toolsDirectory: string) {
-            super();
-
-            this.toolsDirectoryPath = toolsDirectory;
-        }
+    export class Tool implements ITool {
+        public constructor(
+            private toolsOptions: Toolset.IOptions,
+            private gitHub: GitHub.IGitHub,
+            private fileSystem: FileSystem.IFileSystem,
+            private toolsetVersions: Toolset.IToolsetVersions,
+            private httpClient: HttpClient.IHttpClient,
+            private logger: Logger.ILogger,
+            private shell: Shell.IShell,
+            private awaiter: Awaiter.IAwaiter
+        ) {}
 
         async configure() {
-            const versionDescriptor = await getLatestRelease(toolName, 'structurizr', 'cli', /structurizr\-cli\-.+\.zip/);
+            const latestVersionDescriptor = await this.gitHub.getLatestRelease(
+                "structurizr",
+                "cli",
+                /structurizr\-cli\-.+\.zip/
+            );
 
-            await createDirectoryIfNotExists(this.toolsDirectoryPath);
+            const currentVersion = await this.toolsetVersions.getToolVersion(toolName);
 
-            await setupTool(this.toolsDirectoryPath, toolName, versionDescriptor.name, async () => {
-                const zipPath = path.join(this.toolsDirectoryPath, toolFileName);
-                const unzippedDirectory = path.join(this.toolsDirectoryPath, decompressedDirectory);
+            if (latestVersionDescriptor.name === currentVersion) {
+                this.logger.debug("Structurizr is up to date");
 
-                await deleteIfExists(unzippedDirectory);
+                return;
+            }
 
-                await downloadFile(toolName, versionDescriptor.url, zipPath);
+            const zipPath = this.fileSystem.clearPath(this.toolsOptions.toolsDirectoryPath, toolFileName);
+            const unzippedDirectory = this.fileSystem.clearPath(
+                this.toolsOptions.toolsDirectoryPath,
+                decompressedDirectory
+            );
 
-                console.debug(`Decompressing ${toolName}.`);
+            await this.fileSystem.delete(unzippedDirectory);
+            this.logger.debug("Downloading binaries");
+            await this.httpClient.downloadFile(latestVersionDescriptor.url, zipPath);
+            this.logger.debug("Unpacking binaries");
+            await this.fileSystem.unzip(zipPath, unzippedDirectory);
+            this.logger.debug("Ready");
+            await this.fileSystem.delete(zipPath);
 
-                await decompress(zipPath, unzippedDirectory);
-
-                console.debug(`${toolName} decompressed.`);
-
-                await deleteIfExists(zipPath);
-            });
+            await this.toolsetVersions.setToolVersion(toolName, latestVersionDescriptor.name);
         }
 
         async generateDiagrams(filePath: string, outputDirectoryPath: string) {
-            if (fs.existsSync(outputDirectoryPath)) {
-                await fsPromises.rm(outputDirectoryPath, {
-                    recursive: true
-                });
-            }
+            await this.fileSystem.delete(outputDirectoryPath);
+            await this.fileSystem.createDirectory(outputDirectoryPath);
 
-            createDirectoryIfNotExists(outputDirectoryPath);
+            const jarPath = this.fileSystem
+                .clearPath(this.toolsOptions.toolsDirectoryPath, decompressedDirectory, "lib")
+                .replaceAll(/\\/g, "/");
 
-            const jarPath = path.join(this.toolsDirectoryPath, decompressedDirectory, "lib").replaceAll(/\\/g, '/');
+            const commandExecutionResult = await this.shell.executeCommand(
+                `java -cp "${jarPath}/*" com.structurizr.cli.StructurizrCliApplication export -workspace "${filePath}" -format plantuml/c4plantuml -output "${outputDirectoryPath}"`
+            );
 
-            const process = exec(`java -cp "${jarPath}/*" com.structurizr.cli.StructurizrCliApplication export -workspace "${filePath}" -format plantuml/c4plantuml -output "${outputDirectoryPath}"`);
+            if (commandExecutionResult.stderr.length > 0) {
+                this.logger.error(`Structurizr: ${commandExecutionResult.stderr}`);
 
-            process.stderr?.on('data', data => {
-                console.error(`Structurizr error: ${data}`);
-            });
-
-            while (process.exitCode === null) {
-                await setTimeout(100);
+                throw new Error();
             }
         }
     }

@@ -1,30 +1,62 @@
 {
-	"folders": [
-		{
-			"path": "."
-		}
-	],
-	"settings": {
-		"cSpell.words": [
-			"alexkrechik",
-			"Anson",
-			"ciarant",
-			"copyfiles",
-			"cucumberautocomplete",
-			"dbaeumer",
-			"Dudek",
-			"Graphviz",
-			"Gruntfuggly",
-			"hintrc",
-			"jebbs",
-			"Krzysztof",
-			"picoweb",
-			"Plantuml",
-			"puml",
-			"samecli",
-			"Structurizr",
-			"systemticks",
-			"yzhang"
-		]
-	}
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "cSpell.words": [
+            "alexkrechik",
+            "Anson",
+            "Arjun",
+            "Bootstrapper",
+            "breakpage",
+            "ciarant",
+            "copyfiles",
+            "cucumberautocomplete",
+            "dbaeumer",
+            "Dudek",
+            "endgantt",
+            "endjson",
+            "endmindmap",
+            "endsalt",
+            "enduml",
+            "endwbs",
+            "endyaml",
+            "esbenp",
+            "Graphviz",
+            "Gruntfuggly",
+            "hintrc",
+            "Introspector",
+            "jebbs",
+            "Krzysztof",
+            "openapi",
+            "petstore",
+            "picoweb",
+            "plantuml",
+            "Plantuml",
+            "puml",
+            "samecli",
+            "startgantt",
+            "startjson",
+            "startmindmap",
+            "startsalt",
+            "startuml",
+            "startwbs",
+            "startyaml",
+            "Structurizr",
+            "systemticks",
+            "Toolset",
+            "yzhang"
+        ],
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "[javascript]": {
+            "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[typescript]": {
+            "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "prettier.endOfLine": "lf"
+    }
 }

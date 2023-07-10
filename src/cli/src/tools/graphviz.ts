@@ -1,23 +1,43 @@
-import chalk from 'chalk';
-import { exec } from 'child_process';
-import { setTimeout } from 'timers/promises';
+import { Toolset } from "../core/toolset.js";
+import { Logger } from "../infrastructure/logger.js";
+import { ServiceProvider } from "../infrastructure/service-provider.js";
+import { Shell } from "../infrastructure/shell.js";
 
 export namespace Graphviz {
-    export async function check() {
-        if (process.platform === 'win32') {
-            return;
-        }
+    export const toolServiceKey = "Graphviz.Tool";
 
-        const dotProcess = exec('dot --version');
+    export function register(serviceProvider: ServiceProvider.IServiceProvider) {
+        serviceProvider.registerSingletonMany(
+            [Toolset.iToolServiceKey, toolServiceKey],
+            () =>
+                new Tool(
+                    serviceProvider.resolve(Shell.iShellServiceKey),
+                    serviceProvider
+                        .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
+                        .create(toolServiceKey)
+                )
+        );
+    }
 
-        while (dotProcess.exitCode === null) {
-            await setTimeout(100);
-        }
+    export class Tool implements Toolset.ITool {
+        public constructor(private shell: Shell.IShell, private logger: Logger.ILogger) {}
 
-        if (dotProcess.exitCode !== 0) {
-            console.log(chalk.redBright('Install Graphviz from: https://graphviz.org/download/'));
+        async configure(): Promise<void> {
+            if (this.shell.isWindows()) {
+                this.logger.debug("Windows does not require Graphviz standalone installation");
 
-            throw new Error('Graphviz installation is invalid.');
+                return;
+            }
+
+            const result = await this.shell.executeCommand("dot --version");
+
+            if (result.statusCode !== 0) {
+                this.logger.error("Install Graphviz from: https://graphviz.org/download/");
+
+                throw new Error();
+            }
+
+            this.logger.debug("Graphviz is installed");
         }
     }
 }

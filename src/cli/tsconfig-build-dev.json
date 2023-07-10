@@ -1,13 +1,7 @@
 {
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "rootDirs": [
-      "src"
-    ]
-  },
-  "exclude": [
-    "dist",
-    "dist-tests",
-    "tests"
-  ]
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "rootDirs": ["src"]
+    },
+    "exclude": ["dist", "dist-tests", "tests"]
 }

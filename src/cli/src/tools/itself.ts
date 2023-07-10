@@ -1,24 +1,45 @@
-import { exec } from "child_process";
-import { setTimeout } from 'timers/promises';
-import { version as itselfVersion } from '../index.js';
-import chalk from "chalk";
+import { version as itselfVersion } from "../index.js";
+import { Shell } from "../infrastructure/shell.js";
+import { Toolset } from "../core/toolset.js";
+import { Logger } from "../infrastructure/logger.js";
+import { Awaiter } from "../infrastructure/awaiter.js";
+import { ServiceProvider } from "../infrastructure/service-provider.js";
 
 export namespace Itself {
-    export async function check() {
-        let version: string | null = null;
+    export const toolServiceKey = "Itself.Tool";
 
-        const checkProcess = exec('npm view same-cli version', (_error, stdout, _stderr) => {
-            version = stdout.trim();
-        });
+    export function register(serviceProvider: ServiceProvider.IServiceProvider) {
+        serviceProvider.registerSingletonMany(
+            [Toolset.iToolServiceKey, toolServiceKey],
+            () =>
+                new Tool(
+                    serviceProvider.resolve(Shell.iShellServiceKey),
+                    serviceProvider
+                        .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
+                        .create(toolServiceKey),
+                    serviceProvider.resolve(Awaiter.iAwaiterServiceKey)
+                )
+        );
+    }
 
-        while (checkProcess.exitCode === null) {
-            await setTimeout(10);
-        }
+    export class Tool implements Toolset.ITool {
+        public constructor(
+            private shell: Shell.IShell,
+            private logger: Logger.ILogger,
+            private awaiter: Awaiter.IAwaiter
+        ) {}
 
-        if (version != itselfVersion) {
-            console.log(chalk.bgRedBright('Please update this package with \"npm update same-cli\".'));
+        async configure(): Promise<void> {
+            const result = await this.shell.executeCommand("npm view same-cli version");
+            const version = result.stdout;
 
-            await setTimeout(3000);
+            if (version != itselfVersion) {
+                this.logger.warn('Please update this package with "npm update same-cli"');
+
+                await this.awaiter.wait(1000);
+            }
+
+            return;
         }
     }
 }
