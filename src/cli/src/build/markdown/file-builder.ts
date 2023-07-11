@@ -1,4 +1,5 @@
 import MarkdownIt from "markdown-it";
+import MarkdownItAnchor from "markdown-it-anchor";
 import { Build } from "../../core/build.js";
 import { FileSystem } from "../../infrastructure/file-system.js";
 import { MarkdownBuild } from "../markdown.js";
@@ -46,7 +47,7 @@ export class FileBuilder implements Build.IFileBuilder {
         for (let i = 0; i < this.postProcessors.length; i++) {
             const postProcessor = this.postProcessors[i];
 
-            await postProcessor.execute(chunks);
+            await postProcessor.execute(chunks, context);
         }
 
         const markdownRenderedContent = chunks.join("");
@@ -54,6 +55,8 @@ export class FileBuilder implements Build.IFileBuilder {
         const md = new MarkdownIt({
             html: true,
         });
+
+        md.use(MarkdownItAnchor);
 
         const render = md.render(markdownRenderedContent);
         const outputFilePath = this.fileSystem.clearPath(

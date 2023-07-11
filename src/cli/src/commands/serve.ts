@@ -48,6 +48,7 @@ export namespace ServeCommand {
         buildDirectoryPath: string;
         toolsDirectoryPath: string;
         publishDirectoryPath: string;
+        skipToolsCheck: boolean;
     }
 
     export interface ICommand extends ICommandCore<IOptions> {}
@@ -83,10 +84,12 @@ export namespace ServeCommand {
 
             this.plantUmlOptions.serverPort = options.plantUmlServerPort;
 
-            try {
-                await this.toolset.configure();
-            } catch {
-                return;
+            if (!options.skipToolsCheck) {
+                try {
+                    await this.toolset.configure();
+                } catch {
+                    return;
+                }
             }
 
             await this.plantUmlServer.start();
@@ -99,6 +102,7 @@ export namespace ServeCommand {
 
                 this.plantUmlServer.stop();
 
+                exit(1);
                 return;
             }
 

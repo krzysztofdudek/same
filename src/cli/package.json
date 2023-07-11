@@ -1,6 +1,6 @@
 {
     "name": "same-cli",
-    "version": "1.0.0-alpha.9",
+    "version": "1.0.0-alpha.10",
     "description": "Software Architecture Modeling Environment CLI",
     "main": "dist/index.js",
     "type": "module",
@@ -44,6 +44,7 @@
         "figlet": "^1.6.0",
         "js-yaml": "^4.1.0",
         "markdown-it": "^13.0.1",
+        "markdown-it-anchor": "^8.6.7",
         "swagger-ui-express": "^5.0.0",
         "ws": "^8.13.0"
     },

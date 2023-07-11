@@ -22,7 +22,7 @@ const logger = Bootstrapper.serviceProvider
     .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
     .create("Host");
 
-export const version = "1.0.0-alpha.9";
+export const version = "1.0.0-alpha.10";
 
 console.log(figlet.textSync(`SAME CLI`));
 
@@ -89,6 +89,7 @@ program
         "Information"
     )
     .requiredOption("--log-format <format>", "format of logs (Compact, Extensive)", "Compact")
+    .option("--skip-tools-check", "skips tools check performed at the beginning")
     .action((args) => {
         const workingDirectory = fileSystem.clearPath(
             args.workingDirectory.replace(currentWorkingDirectory, process.cwd())
@@ -113,6 +114,7 @@ program
                 toolsDirectoryPath: absoluteUnixPath(workingDirectory, args.toolsDirectory),
                 buildDirectoryPath: absoluteUnixPath(workingDirectory, args.buildDirectory),
                 publishDirectoryPath: absoluteUnixPath(workingDirectory, args.publishDirectory),
+                skipToolsCheck: args.skipToolsCheck !== undefined,
             })
             .then(() => {
                 exit(0);
@@ -143,6 +145,7 @@ program
         "Information"
     )
     .requiredOption("--log-format <format>", "format of logs (Compact, Extensive)", "Compact")
+    .option("--skip-tools-check", "skips tools check performed at the beginning")
     .action((args) => {
         const workingDirectory = fileSystem.clearPath(
             args.workingDirectory.replace(currentWorkingDirectory, process.cwd())
@@ -165,6 +168,7 @@ program
                 toolsDirectoryPath: absoluteUnixPath(workingDirectory, args.toolsDirectory),
                 buildDirectoryPath: absoluteUnixPath(workingDirectory, args.buildDirectory),
                 publishDirectoryPath: absoluteUnixPath(workingDirectory, args.publishDirectory),
+                skipToolsCheck: args.skipToolsCheck !== undefined,
             })
             .catch((error) => {
                 logger.error(error);

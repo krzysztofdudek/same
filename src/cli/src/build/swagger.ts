@@ -106,7 +106,14 @@ export namespace SwaggerBuild {
             await this.fileSystem.createDirectory(publishDirectoryPath);
 
             await this.fileSystem.copy(file.path, publishSpecificationFilePath);
-            await this.fileSystem.copy(builtFilePath, publishHtmlFilePath);
+
+            let htmlFileContent = await this.fileSystem.readFile(builtFilePath);
+            htmlFileContent = htmlFileContent.replace(
+                "</head>",
+                `<script src="${this.publishOptions.createBaseUrl()}/script.js" type="text/javascript"></script></head>`
+            );
+
+            await this.fileSystem.createOrOverwriteFile(publishHtmlFilePath, htmlFileContent);
         }
     }
 

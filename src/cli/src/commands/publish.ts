@@ -42,6 +42,7 @@ export namespace PublishCommand {
         buildDirectoryPath: string;
         toolsDirectoryPath: string;
         publishDirectoryPath: string;
+        skipToolsCheck: boolean;
     }
 
     export interface ICommand extends ICommandCore<IOptions> {}
@@ -76,10 +77,12 @@ export namespace PublishCommand {
 
             this.plantUmlOptions.serverPort = options.plantUmlServerPort;
 
-            try {
-                await this.toolset.configure();
-            } catch {
-                return;
+            if (!options.skipToolsCheck) {
+                try {
+                    await this.toolset.configure();
+                } catch {
+                    return;
+                }
             }
 
             await this.plantUmlServer.start();

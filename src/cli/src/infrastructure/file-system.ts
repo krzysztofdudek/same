@@ -39,14 +39,12 @@ export namespace FileSystem {
                 {
                     recursive: true,
                 },
-                (eventType, fileName) => {
+                (_eventType, fileName) => {
                     if (!(typeof fileName === "string")) {
                         return;
                     }
 
-                    if (eventType === "change") {
-                        callback(this.clearPath(path, fileName));
-                    }
+                    callback(this.clearPath(path, fileName));
                 }
             );
         }

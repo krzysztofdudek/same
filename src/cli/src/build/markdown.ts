@@ -109,7 +109,7 @@ export namespace MarkdownBuild {
     }
 
     export interface IPostProcessor {
-        execute(chunks: string[]): Promise<void>;
+        execute(chunks: string[], context: Build.FileBuildContext): Promise<void>;
     }
 
     const functionRegExp = /@(\w+)\((.*)\)/g;
