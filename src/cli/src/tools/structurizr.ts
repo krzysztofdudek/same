@@ -81,7 +81,7 @@ export namespace Structurizr {
             await this.toolsetVersions.setToolVersion(toolName, latestVersionDescriptor.name);
         }
 
-        async generateDiagrams(filePath: string, outputDirectoryPath: string) {
+        async generateDiagrams(filePath: string, outputDirectoryPath: string): Promise<void> {
             await this.fileSystem.delete(outputDirectoryPath);
             await this.fileSystem.createDirectory(outputDirectoryPath);
 

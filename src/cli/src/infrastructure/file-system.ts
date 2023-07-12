@@ -85,8 +85,8 @@ export namespace FileSystem {
         async checkIfExists(path: string): Promise<boolean> {
             return fs.existsSync(path);
         }
-        createOrOverwriteFile(path: string, content: string): Promise<void> {
-            return fsPromises.writeFile(path, content, {
+        async createOrOverwriteFile(path: string, content: string): Promise<void> {
+            await fsPromises.writeFile(path, content, {
                 encoding: "utf-8",
             });
         }

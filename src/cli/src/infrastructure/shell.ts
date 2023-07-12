@@ -19,7 +19,7 @@ export namespace Shell {
     }
 
     export interface ICommandExecutionResult {
-        statusCode: number;
+        exitCode: number;
         stdout: string;
         stderr: string;
     }
@@ -70,24 +70,24 @@ export namespace Shell {
         isWindows(): boolean {
             return process.platform === "win32";
         }
-        async executeCommand(command: string): Promise<ICommandExecutionResult> {
-            let stdoutResult: string = "";
-            let stderrResult: string = "";
+        executeCommand(command: string): Promise<ICommandExecutionResult> {
+            return new Promise((resolve) => {
+                let stdoutResult: string = "";
+                let stderrResult: string = "";
 
-            const process = exec(command, (error, stdout, stderr) => {
-                stdoutResult = stdout;
-                stderrResult = stderr;
+                const process = exec(command, (_error, stdout, stderr) => {
+                    stdoutResult = stdout;
+                    stderrResult = stderr;
+                });
+
+                process.on("close", (exitCode) => {
+                    resolve({
+                        exitCode: exitCode || 0,
+                        stdout: stdoutResult,
+                        stderr: stderrResult,
+                    });
+                });
             });
-
-            while (process.exitCode === null) {
-                await setTimeout(50);
-            }
-
-            return {
-                statusCode: process.exitCode,
-                stdout: stdoutResult,
-                stderr: stderrResult,
-            };
         }
     }
 }

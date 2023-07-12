@@ -436,11 +436,11 @@ export namespace Build {
     interface IBuilderFileEntry {
         file: AnalyzedFile;
         builtHash: string | null;
-        isBeingBuilt: boolean;
     }
 
     export class Builder implements IBuilder {
         private fileEntries: IBuilderFileEntry[] = [];
+        private buildIsRunning: boolean = false;
 
         public constructor(
             context: IContext,
@@ -455,16 +455,13 @@ export namespace Build {
 
                 if (existingEntryIndex !== -1) {
                     const currentFileEntry = this.fileEntries[existingEntryIndex];
-
-                    const newFileEntry = { file, builtHash: currentFileEntry.builtHash, isBeingBuilt: false };
-
-                    this.fileEntries[existingEntryIndex] = newFileEntry;
+                    currentFileEntry.file = file;
 
                     if (file.hash !== currentFileEntry.builtHash) {
-                        this.resetBuildHashForDependentFiles(newFileEntry);
+                        this.resetBuildHashForDependentFiles(currentFileEntry);
                     }
                 } else {
-                    const fileEntry = { file, builtHash: null, isBeingBuilt: false };
+                    const fileEntry = { file, builtHash: null };
 
                     this.fileEntries.push(fileEntry);
                 }
@@ -476,40 +473,50 @@ export namespace Build {
         }
 
         async build(): Promise<boolean> {
-            this.logger.debug("Running build");
-
-            const wereDetectedErrors = this.fileEntries.find(
-                (x) => x.file.analysisResults.find((y) => y.type === AnalysisResultType.Error) !== undefined
-            );
-
-            if (wereDetectedErrors) {
-                this.logger.info("Build failed");
-
-                return false;
+            if (this.buildIsRunning) {
+                return true;
             }
 
-            const buildExtensions = this.buildExtensions.filter((x) => x.outputType === this.options.outputType);
+            this.buildIsRunning = true;
 
-            await asyncForeach(buildExtensions, async (x) => await x.onBuildStarted());
+            try {
+                this.logger.debug("Running build");
 
-            await this.fileSystem.createDirectory(this.options.outputDirectoryPath);
+                const wereDetectedErrors = this.fileEntries.find(
+                    (x) => x.file.analysisResults.find((y) => y.type === AnalysisResultType.Error) !== undefined
+                );
 
-            const fileEntries = this.fileEntries.filter((x) => x.builtHash !== x.file.hash);
-            for (let i = 0; i < fileEntries.length; i++) {
-                const fileEntry = fileEntries[i];
+                if (wereDetectedErrors) {
+                    this.logger.info("Build failed");
 
-                const result = await this.buildFile(fileEntry, this.options.outputType);
-
-                if (!result) {
                     return false;
                 }
 
-                await asyncForeach(buildExtensions, async (x) => await x.onFileBuilt(fileEntry.file));
+                const buildExtensions = this.buildExtensions.filter((x) => x.outputType === this.options.outputType);
+
+                await asyncForeach(buildExtensions, async (x) => await x.onBuildStarted());
+
+                await this.fileSystem.createDirectory(this.options.outputDirectoryPath);
+
+                const fileEntries = this.fileEntries.filter((x) => x.builtHash !== x.file.hash);
+                for (let i = 0; i < fileEntries.length; i++) {
+                    const fileEntry = fileEntries[i];
+
+                    const result = await this.buildFile(fileEntry, this.options.outputType);
+
+                    if (!result) {
+                        return false;
+                    }
+
+                    await asyncForeach(buildExtensions, async (x) => await x.onFileBuilt(fileEntry.file));
+                }
+
+                this.logger.debug("Build succeeded");
+
+                return true;
+            } finally {
+                this.buildIsRunning = false;
             }
-
-            this.logger.debug("Build succeeded");
-
-            return true;
         }
 
         private async buildFile(
@@ -521,90 +528,71 @@ export namespace Build {
                 return true;
             }
 
-            if (fileEntry.isBeingBuilt) {
-                return true;
-            }
-
-            fileEntry.isBeingBuilt = true;
             const hash = fileEntry.file.hash;
 
             dependencyStack ??= [];
             const localDependencies: { parent: string; child: string }[] = [];
 
-            try {
-                for (let i = 0; i < fileEntry.file.dependencies.length; i++) {
-                    const dependency = fileEntry.file.dependencies[i];
-                    const dependencyFileEntry = this.fileEntries.find((x) => x.file.path === dependency);
+            for (let i = 0; i < fileEntry.file.dependencies.length; i++) {
+                const dependency = fileEntry.file.dependencies[i];
+                const dependencyFileEntry = this.fileEntries.find((x) => x.file.path === dependency);
 
-                    if (!dependencyFileEntry) {
-                        continue;
-                    }
-
-                    if (
-                        dependencyStack.findIndex((x) => x.parent === fileEntry.file.path && x.child === dependency) !==
-                        -1
-                    ) {
-                        this.logger.error(
-                            `Detected dependency loop for "${fileEntry.file.compactPath}". Build stopped.`
-                        );
-
-                        return false;
-                    }
-
-                    const newEntry = { parent: fileEntry.file.path, child: dependency };
-
-                    if (
-                        localDependencies.findIndex(
-                            (x) => x.parent === newEntry.parent && x.child == newEntry.child
-                        ) !== -1
-                    ) {
-                        continue;
-                    }
-
-                    dependencyStack.push(newEntry);
-                    localDependencies.push(newEntry);
-
-                    const result = await this.buildFile(dependencyFileEntry, outputType, dependencyStack);
-
-                    if (!result) return false;
+                if (!dependencyFileEntry) {
+                    continue;
                 }
 
-                try {
-                    const fileBuilders = this.fileBuilders.filter(
-                        (x) =>
-                            x.fileExtensions.findIndex((y) => y === fileEntry.file.extension) > -1 &&
-                            x.outputType === outputType
-                    );
-                    const relativePath = fileEntry.file.path.substring(this.options.sourceDirectoryPath.length + 1);
-
-                    for (let j = 0; j < fileBuilders.length; j++) {
-                        const fileBuilder = fileBuilders[j];
-
-                        this.logger.info(`Building: ${fileEntry.file.compactPath}`);
-
-                        const fileContent = await this.fileSystem.readFile(fileEntry.file.path);
-
-                        await fileBuilder.build(
-                            new FileBuildContext(
-                                fileEntry.file.path,
-                                relativePath,
-                                fileEntry.file.extension,
-                                fileContent
-                            )
-                        );
-                    }
-
-                    fileEntry.builtHash = hash;
-
-                    return true;
-                } catch (error) {
-                    this.logger.info("Build failed");
-                    this.logger.error(error);
+                if (
+                    dependencyStack.findIndex((x) => x.parent === fileEntry.file.path && x.child === dependency) !== -1
+                ) {
+                    this.logger.error(`Detected dependency loop for "${fileEntry.file.compactPath}". Build stopped.`);
 
                     return false;
                 }
-            } finally {
-                fileEntry.isBeingBuilt = false;
+
+                const newEntry = { parent: fileEntry.file.path, child: dependency };
+
+                if (
+                    localDependencies.findIndex((x) => x.parent === newEntry.parent && x.child == newEntry.child) !== -1
+                ) {
+                    continue;
+                }
+
+                dependencyStack.push(newEntry);
+                localDependencies.push(newEntry);
+
+                const result = await this.buildFile(dependencyFileEntry, outputType, dependencyStack);
+
+                if (!result) return false;
+            }
+
+            try {
+                const fileBuilders = this.fileBuilders.filter(
+                    (x) =>
+                        x.fileExtensions.findIndex((y) => y === fileEntry.file.extension) > -1 &&
+                        x.outputType === outputType
+                );
+                const relativePath = fileEntry.file.path.substring(this.options.sourceDirectoryPath.length + 1);
+
+                for (let j = 0; j < fileBuilders.length; j++) {
+                    const fileBuilder = fileBuilders[j];
+
+                    this.logger.info(`Building: ${fileEntry.file.compactPath}`);
+
+                    const fileContent = await this.fileSystem.readFile(fileEntry.file.path);
+
+                    await fileBuilder.build(
+                        new FileBuildContext(fileEntry.file.path, relativePath, fileEntry.file.extension, fileContent)
+                    );
+                }
+
+                fileEntry.builtHash = hash;
+
+                return true;
+            } catch (error) {
+                this.logger.info("Build failed");
+                this.logger.error(error);
+
+                return false;
             }
         }
 
