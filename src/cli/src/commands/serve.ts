@@ -122,8 +122,8 @@ export namespace ServeCommand {
         private runServer() {
             const app = express();
 
-            app.use(express.static(this.publishOptions.outputDirectoryPath));
             app.use(swagger.serve);
+            app.use(express.static(this.publishOptions.outputDirectoryPath));
 
             const wsServer = new WebSocketServer({ noServer: true });
 
