@@ -11,6 +11,7 @@ import { FileSystem } from "../infrastructure/file-system.js";
 import { Logger } from "../infrastructure/logger.js";
 import swagger from "swagger-ui-express";
 import { exit } from "process";
+import { Awaiter } from "../infrastructure/awaiter.js";
 
 export namespace ServeCommand {
     export const iCommandServiceKey = "ServeCommand.ICommand";
@@ -32,7 +33,8 @@ export namespace ServeCommand {
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
                     serviceProvider
                         .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
-                        .create(iCommandServiceKey)
+                        .create(iCommandServiceKey),
+                    serviceProvider.resolve(Awaiter.iAwaiterServiceKey)
                 )
         );
     }
@@ -65,7 +67,8 @@ export namespace ServeCommand {
             private context: Build.IContext,
             private publishOptions: Publish.IOptions,
             private fileSystem: FileSystem.IFileSystem,
-            private logger: Logger.ILogger
+            private logger: Logger.ILogger,
+            private awaiter: Awaiter.IAwaiter
         ) {}
 
         async execute(options: IOptions): Promise<void> {
@@ -147,13 +150,37 @@ export namespace ServeCommand {
         }
 
         private runHotReload() {
-            this.fileSystem.watchRecursive(this.buildOptions.sourceDirectoryPath, async (filePath) => {
-                try {
-                    await this.context.analyze(filePath);
-                    await this.builder.build();
-                } catch {}
+            let updatedFilesPaths: string[] = [];
 
-                this.enforceReload();
+            this.fileSystem.watchRecursive(this.buildOptions.sourceDirectoryPath, async (filePath) => {
+                if (updatedFilesPaths.indexOf(filePath) !== -1) {
+                    return;
+                }
+
+                updatedFilesPaths.push(filePath);
+            });
+
+            new Promise(async () => {
+                while (true) {
+                    if (updatedFilesPaths.length > 0) {
+                        const filesPaths = [...updatedFilesPaths];
+
+                        for (let i = 0; i < filesPaths.length; i++) {
+                            const filePath = filesPaths[i];
+
+                            try {
+                                await this.context.analyze(filePath);
+                            } catch {}
+
+                            updatedFilesPaths = updatedFilesPaths.filter((x) => filesPaths.indexOf(x) === -1);
+                        }
+
+                        await this.builder.build();
+                        this.enforceReload();
+                    }
+
+                    await this.awaiter.wait(500);
+                }
             });
         }
     }

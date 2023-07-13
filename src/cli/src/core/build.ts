@@ -524,6 +524,10 @@ export namespace Build {
             outputType: string,
             dependencyStack?: { parent: string; child: string }[]
         ): Promise<boolean> {
+            if (!(await this.fileSystem.checkIfExists(fileEntry.file.path))) {
+                this.fileEntries = this.fileEntries.filter((x) => x.file.path !== fileEntry.file.path);
+            }
+
             if (fileEntry.builtHash == fileEntry.file.hash) {
                 return true;
             }
