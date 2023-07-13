@@ -22,7 +22,7 @@ const logger = Bootstrapper.serviceProvider
     .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
     .create("Host");
 
-export const version = "1.0.0-alpha.13";
+export const version = "1.0.0-alpha.14";
 
 console.log(figlet.textSync(`SAME CLI`));
 
@@ -146,6 +146,7 @@ program
     )
     .requiredOption("--log-format <format>", "format of logs (Compact, Extensive)", "Compact")
     .option("--skip-tools-check", "skips tools check performed at the beginning")
+    .requiredOption("--watch", "should server be watching source files (yes / no)", "yes")
     .action((args) => {
         const workingDirectory = fileSystem.clearPath(
             args.workingDirectory.replace(currentWorkingDirectory, process.cwd())
@@ -169,6 +170,7 @@ program
                 buildDirectoryPath: absoluteUnixPath(workingDirectory, args.buildDirectory),
                 publishDirectoryPath: absoluteUnixPath(workingDirectory, args.publishDirectory),
                 skipToolsCheck: args.skipToolsCheck !== undefined,
+                watch: args.watch === "yes",
             })
             .catch((error) => {
                 logger.error(error);

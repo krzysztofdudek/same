@@ -51,6 +51,7 @@ export namespace ServeCommand {
         toolsDirectoryPath: string;
         publishDirectoryPath: string;
         skipToolsCheck: boolean;
+        watch: boolean;
     }
 
     export interface ICommand extends ICommandCore<IOptions> {}
@@ -110,7 +111,10 @@ export namespace ServeCommand {
             }
 
             this.runServer();
-            this.runHotReload();
+
+            if (options.watch) {
+                this.runHotReload();
+            }
         }
 
         private enforceReload = () => {};
