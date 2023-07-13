@@ -29,7 +29,7 @@ export namespace Graphviz {
                 return;
             }
 
-            const result = await this.shell.executeCommand("dot --version");
+            const result = await this.shell.executeCommand("dot -V");
 
             if (result.exitCode !== 0) {
                 this.logger.error("Install Graphviz from: https://graphviz.org/download/");
