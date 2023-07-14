@@ -2,7 +2,7 @@ import { ServiceProvider } from "../infrastructure/service-provider.js";
 import { Graphviz } from "./graphviz.js";
 import { Itself } from "./itself.js";
 import { Java } from "./java.js";
-import { PlantUml } from "./plant-uml.js";
+import { PlantUml } from "./plantuml.js";
 import { Structurizr } from "./structurizr.js";
 
 export namespace Tools {

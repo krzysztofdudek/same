@@ -3,7 +3,7 @@ import { matchAll } from "../core/regExp.js";
 import { FileSystem } from "../infrastructure/file-system.js";
 import { Logger } from "../infrastructure/logger.js";
 import { ServiceProvider } from "../infrastructure/service-provider.js";
-import { PlantUml } from "../tools/plant-uml.js";
+import { PlantUml } from "../tools/plantuml.js";
 
 export namespace PlantUmlBuild {
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
@@ -21,15 +21,12 @@ export namespace PlantUmlBuild {
         );
     }
 
-    const startumlString = "@startuml";
-    const endumlString = "@enduml";
-
     export class FileBuilder implements Build.IFileBuilder {
         fileExtensions: string[] = ["puml", "plantuml"];
         outputType = "html";
 
         public constructor(
-            private plantUmlServer: PlantUml.Server,
+            private plantUmlServer: PlantUml.IServer,
             private buildOptions: Build.IOptions,
             private fileSystem: FileSystem.IFileSystem,
             private logger: Logger.ILogger

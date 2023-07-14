@@ -95,7 +95,7 @@ export namespace PlantUml {
             return this.fileSystem.clearPath(this.toolsOptions.toolsDirectoryPath, toolFileName);
         }
     }
-    ``;
+
     export interface IServer {
         start(): Promise<void>;
         stop(): void;

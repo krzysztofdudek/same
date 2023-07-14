@@ -3,7 +3,7 @@ import { ICommand as ICommandCore } from "../core/command.js";
 import { Manifest } from "../core/manifest.js";
 import { Toolset } from "../core/toolset.js";
 import { Build } from "../core/build.js";
-import { PlantUml } from "../tools/plant-uml.js";
+import { PlantUml } from "../tools/plantuml.js";
 import { Publish } from "../publish/publish.js";
 import express from "express";
 import { WebSocketServer } from "ws";

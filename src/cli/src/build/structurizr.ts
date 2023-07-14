@@ -2,7 +2,7 @@ import { Build } from "../core/build.js";
 import { FileSystem } from "../infrastructure/file-system.js";
 import { Logger } from "../infrastructure/logger.js";
 import { ServiceProvider } from "../infrastructure/service-provider.js";
-import { PlantUml } from "../tools/plant-uml.js";
+import { PlantUml } from "../tools/plantuml.js";
 import { Structurizr } from "../tools/structurizr.js";
 
 export namespace StructurizrBuild {

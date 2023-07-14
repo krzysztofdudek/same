@@ -1,6 +1,6 @@
 import { ServiceProvider } from "../infrastructure/service-provider.js";
 import { MarkdownBuild } from "./markdown.js";
-import { PlantUmlBuild } from "./plant-uml.js";
+import { PlantUmlBuild } from "./plantuml.js";
 import { StructurizrBuild } from "./structurizr.js";
 import { SwaggerBuild } from "./swagger.js";
 
