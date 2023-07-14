@@ -128,9 +128,7 @@ export namespace ServeCommand {
             const wsServer = new WebSocketServer({ noServer: true });
 
             const server = app.listen(this.publishOptions.hostPort, () => {
-                console.log(
-                    `Server run on url: ${this.publishOptions.hostProtocol}://${this.publishOptions.hostName}:${this.publishOptions.hostPort}.`
-                );
+                console.log(`Server run on url: ${this.publishOptions.createBaseUrl()}.`);
             });
 
             server.on("upgrade", (request, socket, head) => {
