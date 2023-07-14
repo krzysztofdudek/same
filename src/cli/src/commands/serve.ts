@@ -4,7 +4,7 @@ import { Manifest } from "../core/manifest.js";
 import { Toolset } from "../core/toolset.js";
 import { Build } from "../core/build.js";
 import { PlantUml } from "../tools/plant-uml.js";
-import { Publish } from "../publish/publish-static-files.js";
+import { Publish } from "../publish/publish.js";
 import express from "express";
 import { WebSocketServer } from "ws";
 import { FileSystem } from "../infrastructure/file-system.js";
@@ -41,6 +41,7 @@ export namespace ServeCommand {
 
     export interface IOptions {
         outputType: string;
+        serverPort: number;
         hostName: string;
         hostPort: number;
         hostProtocol: string;
@@ -110,7 +111,7 @@ export namespace ServeCommand {
                 return;
             }
 
-            this.runServer();
+            this.runServer(options.serverPort);
 
             if (options.watch) {
                 this.runHotReload();
@@ -119,7 +120,7 @@ export namespace ServeCommand {
 
         private enforceReload = () => {};
 
-        private runServer() {
+        private runServer(serverPort: number) {
             const app = express();
 
             app.use(swagger.serve);
@@ -127,7 +128,7 @@ export namespace ServeCommand {
 
             const wsServer = new WebSocketServer({ noServer: true });
 
-            const server = app.listen(this.publishOptions.hostPort, () => {
+            const server = app.listen(serverPort, () => {
                 console.log(`Server run on url: ${this.publishOptions.createBaseUrl()}.`);
             });
 

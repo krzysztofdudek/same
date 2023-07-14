@@ -31,9 +31,9 @@ export namespace Publish {
 
     export interface IOptions {
         outputDirectoryPath: string;
+        hostPort: number;
         hostProtocol: string;
         hostName: string;
-        hostPort: number;
 
         createBaseUrl(): string;
     }

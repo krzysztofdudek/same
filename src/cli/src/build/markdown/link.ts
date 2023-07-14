@@ -2,10 +2,11 @@ import { Build } from "../../core/build.js";
 import { handleAllMatches, matchAll } from "../../core/regExp.js";
 import { FileSystem } from "../../infrastructure/file-system.js";
 import { ServiceProvider } from "../../infrastructure/service-provider.js";
-import { Publish } from "../../publish/publish-static-files.js";
+import { Publish } from "../../publish/publish.js";
 import { MarkdownBuild } from "../markdown.js";
 
 const regExp = /\[([^\]]+)\]\(([^)#]+)(#?)([\w\d\-]*)\)/g;
+const remoteResourceRegExp = /\w+:\/\//;
 
 export namespace Link {
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
@@ -46,59 +47,61 @@ export namespace Link {
                 const anchorSet = match[3] === "#";
                 const anchor = match[4] || null;
 
-                if (!link.match(/\w+:\/\//)) {
-                    const filePath = this.fileSystem.clearPath(
-                        this.buildOptions.sourceDirectoryPath,
-                        this.fileSystem.getDirectory(path).substring(this.buildOptions.sourceDirectoryPath.length + 1),
-                        decodeURI(link)
+                if (link.match(remoteResourceRegExp)) {
+                    return;
+                }
+
+                const filePath = this.fileSystem.clearPath(
+                    this.buildOptions.sourceDirectoryPath,
+                    this.fileSystem.getDirectory(path).substring(this.buildOptions.sourceDirectoryPath.length + 1),
+                    decodeURI(link)
+                );
+
+                if (!(await this.fileSystem.checkIfExists(filePath))) {
+                    analysisResults.push(
+                        new Build.AnalysisResult(
+                            Build.AnalysisResultType.Warning,
+                            "Linked file does not exists.",
+                            line,
+                            column
+                        )
+                    );
+                }
+
+                if (!anchorSet) {
+                    return;
+                }
+
+                if ((anchor?.length ?? 0) < 1) {
+                    analysisResults.push(
+                        new Build.AnalysisResult(
+                            Build.AnalysisResultType.Warning,
+                            "Anchor name is not specified.",
+                            line,
+                            column
+                        )
                     );
 
-                    if (!(await this.fileSystem.checkIfExists(filePath))) {
-                        analysisResults.push(
-                            new Build.AnalysisResult(
-                                Build.AnalysisResultType.Warning,
-                                "Linked file does not exists.",
-                                line,
-                                column
-                            )
-                        );
-                    }
+                    return;
+                }
 
-                    if (!anchorSet) {
-                        return;
-                    }
+                const fileContent = await this.fileSystem.readFile(filePath);
 
-                    if ((anchor?.length ?? 0) < 1) {
-                        analysisResults.push(
-                            new Build.AnalysisResult(
-                                Build.AnalysisResultType.Warning,
-                                "Anchor name is not specified.",
-                                line,
-                                column
-                            )
-                        );
+                const headerMatches = matchAll(fileContent, /\n\s*#+\s*([^\n]+)\n/g).map((x) => {
+                    const words = matchAll(x[1], /(\w+)/g).map((x) => x[1]);
 
-                        return;
-                    }
+                    return words.map((y) => y.toLowerCase()).join("-");
+                });
 
-                    const fileContent = await this.fileSystem.readFile(filePath);
-
-                    const headerMatches = matchAll(fileContent, /\n\s*#+\s*([^\n]+)\n/g).map((x) => {
-                        const words = matchAll(x[1], /(\w+)/g).map((x) => x[1]);
-
-                        return words.map((y) => y.toLowerCase()).join("-");
-                    });
-
-                    if (headerMatches.findIndex((x) => x === anchor) === -1) {
-                        analysisResults.push(
-                            new Build.AnalysisResult(
-                                Build.AnalysisResultType.Warning,
-                                "Anchor in the linked file does not exist.",
-                                line,
-                                column
-                            )
-                        );
-                    }
+                if (headerMatches.findIndex((x) => x === anchor) === -1) {
+                    analysisResults.push(
+                        new Build.AnalysisResult(
+                            Build.AnalysisResultType.Warning,
+                            "Anchor in the linked file does not exist.",
+                            line,
+                            column
+                        )
+                    );
                 }
             });
 
@@ -126,6 +129,10 @@ export namespace Link {
                     const title = match[1];
                     const link = match[2];
                     const anchor = match[4] || null;
+
+                    if (link.match(remoteResourceRegExp)) {
+                        continue;
+                    }
 
                     const absoluteFilePath = this.fileSystem.clearPath(
                         this.fileSystem.getDirectory(context.path),

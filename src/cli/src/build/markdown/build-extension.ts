@@ -1,7 +1,7 @@
 import { FileSystem } from "../../infrastructure/file-system.js";
 import { Build } from "../../core/build.js";
 import { Manifest } from "../../core/manifest.js";
-import { Publish } from "../../publish/publish-static-files.js";
+import { Publish } from "../../publish/publish.js";
 
 export class BuildExtension implements Build.IBuildExtension {
     outputType: string = "html";

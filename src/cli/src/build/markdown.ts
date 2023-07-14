@@ -11,7 +11,7 @@ import { StructurizrFunction } from "./markdown/structurizr-function.js";
 import { MarkdownFunction } from "./markdown/markdown-function.js";
 import { SwaggerFunction } from "./markdown/swagger-function.js";
 import { BuildExtension } from "./markdown/build-extension.js";
-import { Publish } from "../publish/publish-static-files.js";
+import { Publish } from "../publish/publish.js";
 import { Manifest } from "../core/manifest.js";
 import { handleAllMatches, matchAll } from "../core/regExp.js";
 import { BreakPageFunction } from "./markdown/break-page-function.js";

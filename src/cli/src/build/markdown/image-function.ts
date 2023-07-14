@@ -1,7 +1,7 @@
 import { Build } from "../../core/build.js";
 import { FileSystem } from "../../infrastructure/file-system.js";
 import { ServiceProvider } from "../../infrastructure/service-provider.js";
-import { Publish } from "../../publish/publish-static-files.js";
+import { Publish } from "../../publish/publish.js";
 import { MarkdownBuild } from "../markdown.js";
 
 const functionName = "image";

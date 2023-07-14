@@ -3,7 +3,7 @@ import { FileSystem } from "../infrastructure/file-system.js";
 import { getObject } from "../infrastructure/functions/getObject.js";
 import { ServiceProvider } from "../infrastructure/service-provider.js";
 import swagger from "swagger-ui-express";
-import { Publish } from "../publish/publish-static-files.js";
+import { Publish } from "../publish/publish.js";
 
 const swaggerInitJsFileContent = `
 window.onload = function() {

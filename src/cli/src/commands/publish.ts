@@ -4,7 +4,7 @@ import { Manifest } from "../core/manifest.js";
 import { Toolset } from "../core/toolset.js";
 import { Build } from "../core/build.js";
 import { PlantUml } from "../tools/plant-uml.js";
-import { Publish } from "../publish/publish-static-files.js";
+import { Publish } from "../publish/publish.js";
 import { Logger } from "../infrastructure/logger.js";
 
 export namespace PublishCommand {

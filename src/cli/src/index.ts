@@ -130,9 +130,10 @@ program
     .command("serve")
     .description("serves documentation with live reload ability")
     .requiredOption("--output-type <type>", "artifacts output type (html)", "html")
-    .requiredOption("--host-name <name>", "host name", "localhost")
-    .requiredOption("--host-port <port>", "host port", "8080")
-    .requiredOption("--host-protocol <protocol>", "host protocol", "http")
+    .requiredOption("--server-port <port>", "port on which server is going to be run", "8080")
+    .requiredOption("--host-name <name>", "public interface host name", "localhost")
+    .requiredOption("--host-port <port>", "public interface host port", "8080")
+    .requiredOption("--host-protocol <protocol>", "public interface host protocol", "http")
     .requiredOption("--plant-uml-server-port <port>", "PlantUML server port", "65100")
     .requiredOption("--working-directory <path>", "working directory path", `${currentWorkingDirectory}`)
     .requiredOption("--source-directory <name>", "a directory where source files lays", `src`)
@@ -160,6 +161,7 @@ program
         command
             .execute({
                 outputType: args.outputType,
+                serverPort: args.serverPort,
                 hostName: args.hostName,
                 hostPort: args.hostPort,
                 hostProtocol: args.hostProtocol,
