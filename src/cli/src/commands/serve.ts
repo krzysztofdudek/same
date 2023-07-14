@@ -101,7 +101,11 @@ export namespace ServeCommand {
 
             try {
                 await this.context.analyzeCompletely();
-                await this.builder.build();
+
+                if (!(await this.builder.build())) {
+                    exit(1);
+                    return;
+                }
             } catch (error) {
                 this.logger.error(error);
 
