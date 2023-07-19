@@ -261,7 +261,7 @@ export namespace Build {
             for (let i = 0; i < filesPaths.length; i++) {
                 const filePath = filesPaths[i];
 
-                await this.analyzeFileInternal(filePath);
+                await this.analyzeFileInternal(filePath, false);
             }
 
             this.logger.debug("Analysis complete");
@@ -270,12 +270,12 @@ export namespace Build {
         async analyze(filePath: string): Promise<void> {
             this.logger.debug(`Running analysis`);
 
-            await this.analyzeFileInternal(filePath);
+            await this.analyzeFileInternal(filePath, false);
 
             this.logger.debug("Analysis complete");
         }
 
-        private async analyzeFileInternal(filePath: string): Promise<void> {
+        private async analyzeFileInternal(filePath: string, force: boolean): Promise<void> {
             if (this.filesPathsBeingAnalyzed.findIndex((x) => x === filePath) !== -1) {
                 return;
             }
@@ -294,7 +294,7 @@ export namespace Build {
                 const fileContent = await this.fileSystem.readFile(filePath);
                 const hash = createHash("sha512").update(fileContent, "utf-8").digest("base64");
 
-                if (this.files.find((x) => x.path === filePath && x.hash === hash)) {
+                if (!force && this.files.find((x) => x.path === filePath && x.hash === hash)) {
                     return;
                 }
 
@@ -322,9 +322,18 @@ export namespace Build {
                 this.updateFileInformation(file);
 
                 await this.notifyWatchersOnFileAnalyzed(file);
+
+                await this.reanalyzeFilesThatHasDependencyTo(filePath);
             } finally {
                 this.filesPathsBeingAnalyzed = this.filesPathsBeingAnalyzed.filter((x) => x !== filePath);
             }
+        }
+
+        private async reanalyzeFilesThatHasDependencyTo(filePath: string) {
+            await asyncForeach(
+                this.files.filter((file) => file.dependencies.indexOf(filePath) !== -1),
+                async (file) => await this.analyzeFileInternal(file.path, true)
+            );
         }
 
         private async notifyWatchersOnFileDeleted(filePath: string) {
