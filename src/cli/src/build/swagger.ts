@@ -124,6 +124,9 @@ export namespace SwaggerBuild {
                 context.relativePath.substring(0, context.relativePath.length - context.extension.length)
             );
 
+            const outputDirectoryPath = this.fileSystem.getDirectory(outputFilePath);
+
+            await this.fileSystem.createDirectory(outputDirectoryPath);
             await this.fileSystem.createOrOverwriteFile(outputFilePath + "html", render);
 
             const swaggerInitJsFileContentSpecified = swaggerInitJsFileContent.replace(
