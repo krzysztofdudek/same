@@ -22,7 +22,7 @@ const logger = Bootstrapper.serviceProvider
     .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
     .create("Host");
 
-export const version = "1.0.0-alpha.19";
+export const version = "1.0.0-alpha.20";
 
 console.log(figlet.textSync(`SAME CLI`));
 

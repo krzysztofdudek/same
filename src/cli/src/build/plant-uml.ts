@@ -50,7 +50,7 @@ export namespace PlantUmlBuild {
                 const startMatch = startMatches[i];
                 const startIndex = startMatch.index!;
                 let fragment = context.content.substring(startIndex);
-                const endMatch = fragment.match(/@end\w+/gm);
+                const endMatch = fragment.match(/@end\w+/m);
 
                 if (endMatch) {
                     const endIndex = endMatch.index!;
