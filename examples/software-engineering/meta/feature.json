@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "title": "Feature description",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "businessName": {
+      "type": "string"
+    },
+    "codeName": {
+      "type": "string"
+    },
+    "phases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Phase"
+      }
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Requirement"
+      }
+    },
+    "userStories": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/UserStory"
+      }
+    }
+  },
+  "required": [
+    "codeName"
+  ],
+  "definitions": {
+    "Phase": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "filePath": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "number",
+        "filePath"
+      ]
+    },
+    "Requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "isNew": {
+          "type": "boolean"
+        },
+        "content": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "isNew",
+        "content"
+      ]
+    },
+    "UserStory": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "content"
+      ]
+    }
+  }
+}

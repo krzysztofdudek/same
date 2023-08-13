@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "title": "Requirement",
+  "type": "object",
+  "oneOf": [
+    {
+      "$ref": "#/definitions/InternalDescription"
+    },
+    {
+      "$ref": "#/definitions/ExternalDescription"
+    }
+  ],
+  "required": ["title"],
+  "definitions": {
+    "InternalDescription": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": ["title", "description"]
+    },
+    "ExternalDescription": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "descriptionFilePath": {
+          "type": "string"
+        }
+      },
+      "required": ["title", "descriptionFilePath"]
+    }
+  }
+}

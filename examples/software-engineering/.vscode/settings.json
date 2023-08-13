@@ -13,6 +13,22 @@
   "c4.diagram.plantuml.enabled": true,
   "cSpell.words": ["enduml", "plantuml", "puml", "startuml", "startsalt", "endsalt", "startgantt", "endgantt", "startmindmap", "endmindmap", "startwbs", "endwbs", "startjson", "endjson", "startyaml", "endyaml", "breakpage"],
   "yaml.schemas": {
-    "./meta/templates/requirement.json": "*.requirement.yaml"
+      "meta/manifest.json": "manifest.yaml",
+      "meta/feature.json": [
+        "feature.yaml",
+        "*.feature.yaml"
+      ],
+      "meta/feature-phase.json": [
+        "feature-phase.yaml",
+        "*.feature-phase.yaml"
+      ],
+      "meta/component.json": [
+        "component.yaml",
+        "*.component.yaml"
+      ],
+      "meta/component-version.json": [
+        "component-version.yaml",
+        "*.component-version.yaml"
+      ]
   }
 }

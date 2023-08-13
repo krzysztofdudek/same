@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "type": "object",
+  "title": "Documentation manifest",
+  "additionalProperties": false,
+  "properties": {
+    "projectName": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "projectName"
+  ]
+}

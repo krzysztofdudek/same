@@ -1,4 +1,4 @@
-workspace extends example.dsl {
+workspace extends model.dsl {
   views {
     systemContext softwareSystem {
       include *
