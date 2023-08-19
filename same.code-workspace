@@ -37,6 +37,7 @@
             "Plantuml",
             "puml",
             "samecli",
+            "Startable",
             "startgantt",
             "startjson",
             "startmindmap",
@@ -45,6 +46,7 @@
             "startwbs",
             "startyaml",
             "Structurizr",
+            "Synchronizable",
             "systemticks",
             "Toolset",
             "yzhang"

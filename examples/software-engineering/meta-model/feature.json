@@ -21,12 +21,6 @@
       "items": {
         "$ref": "#/definitions/Requirement"
       }
-    },
-    "userStories": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/UserStory"
-      }
     }
   },
   "required": [
@@ -62,18 +56,6 @@
       },
       "required": [
         "isNew",
-        "content"
-      ]
-    },
-    "UserStory": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "content": {
-          "type": "string"
-        }
-      },
-      "required": [
         "content"
       ]
     }

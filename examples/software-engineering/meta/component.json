@@ -1,9 +1,0 @@
-{
-  "$schema": "http://json-schema.org/schema",
-  "type": "object",
-  "title": "Component description",
-  "additionalProperties": false,
-  "properties": {
-
-  }
-}

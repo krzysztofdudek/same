@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "type": "object",
+  "title": "Component description",
+  "additionalProperties": false,
+  "properties": {
+    "displayName": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "client-frontend",
+        "client-bff",
+        "facade-gateway",
+        "facade-orchestrator",
+        "low-level",
+        "infrastructure",
+        "outbound-gateway"
+      ]
+    },
+    "technology": {
+      "type": "string",
+      "enum": [
+        ".NET",
+        "Node.js",
+        "PostgreSQL",
+        "Redis",
+        "?"
+      ]
+    },
+    "isPartOfModularMonolith": {
+      "type": "boolean"
+    },
+    "description": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "displayName",
+    "category",
+    "technology",
+    "isPartOfModularMonolith",
+    "description"
+  ]
+}

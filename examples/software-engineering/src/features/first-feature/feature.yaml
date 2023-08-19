@@ -1,5 +1,0 @@
-codeName: Alpha
-businessName: Some business name
-phases:
-  - number: 1
-    filePath: ./phase-1/feature-phase.yaml

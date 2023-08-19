@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "type": "object",
+  "title": "Component phase description",
+  "additionalProperties": false,
+  "properties": {
+    "context": {
+      "type": "string"
+    },
+    "responsibilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "technicalRequirements": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "implementedBoundedContexts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "$comment": "@types/bounded-context"
+          },
+          "phase": {
+            "type": "string",
+            "$comment": "@types/bounded-context-phase"
+          }
+        },
+        "required": [
+          "name",
+          "phase"
+        ]
+      }
+    },
+    "dependsOnComponents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "$comment": "@types/component"
+          },
+          "phase": {
+            "type": "string",
+            "$comment": "@types/component-phase"
+          }
+        },
+        "required": [
+          "name",
+          "phase"
+        ]
+      }
+    }
+  },
+  "required": [
+    "context",
+    "responsibilities",
+    "technicalRequirements",
+    "implementedBoundedContexts",
+    "dependsOnComponents"
+  ]
+}

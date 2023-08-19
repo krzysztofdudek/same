@@ -1,0 +1,5 @@
+displayName: Access Control
+category: infrastructure
+technology: .NET
+isPartOfModularMonolith: true
+description: Provides an ability to validate if user has an access to the specific resource.

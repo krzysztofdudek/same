@@ -2,10 +2,10 @@
     "name": "same-cli",
     "version": "1.0.0-beta.1",
     "description": "Software Architecture Modeling Environment CLI",
-    "main": "dist/index.js",
+    "main": "dist/entrypoint.js",
     "type": "module",
     "bin": {
-        "samecli": "dist/index.js"
+        "samecli": "dist/entrypoint.js"
     },
     "scripts": {
         "build": "tsc -p tsconfig-build.json",

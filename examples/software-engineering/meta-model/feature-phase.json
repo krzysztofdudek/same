@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "title": "Feature phase description",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "context": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "userStories": {
+
+    }
+  }
+}

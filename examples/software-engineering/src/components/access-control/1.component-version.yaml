@@ -1,0 +1,17 @@
+context: To unify layer of access to particular resources within the platform, it's required to have single point, that could be queries for answering the question "Who can do what?". Access Control component serves this purpose aggregating all aspects, that can differentiate approval or rejection of access to specific resource.
+responsibilities:
+  - maintenance of data representing permissions, users in relation to resources and access control
+  - providing information about users' ability to access specific resources
+  - allow to disable features with kill switch
+technicalRequirements:
+  - write model is stored in SQL database
+  - read model is not separated, queries operate on write model
+  - unregister or unassign means delete from the database perspective; audit aspect is currently skipped
+  - query model has to check tenant id
+  - resources, user groups and users are implemented as an adapter that would get the user role from Review Forum
+implementedBoundedContexts:
+  - name: access-control-phase
+    phase: "1"
+dependsOnComponents:
+  - name: access-control-database-phase
+    phase: "1"

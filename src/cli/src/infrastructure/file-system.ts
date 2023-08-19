@@ -4,6 +4,7 @@ import { ServiceProvider } from "./service-provider.js";
 import decompress from "decompress";
 import absoluteUnixPath from "./functions/absoluteUnixPath.js";
 import { dirname, extname, basename } from "path";
+import { IStoppableService } from "./lifetimeServices.js";
 
 export namespace FileSystem {
     export const iFileSystemServiceKey = "FileSystem.IFileSystem";
@@ -25,7 +26,7 @@ export namespace FileSystem {
         getExtension(path: string): string;
         getDirectory(path: string): string;
         getName(path: string): string;
-        watchRecursive(path: string, callback: (path: string) => void): void;
+        watchRecursive(path: string, callback: (path: string) => void): IStoppableService;
         copy(sourcePath: string, destinationPath: string): Promise<void>;
     }
 
@@ -33,8 +34,8 @@ export namespace FileSystem {
         async copy(sourcePath: string, destinationPath: string): Promise<void> {
             await fsPromises.copyFile(sourcePath, destinationPath);
         }
-        watchRecursive(path: string, callback: (path: string) => void): void {
-            fs.watch(
+        watchRecursive(path: string, callback: (path: string) => void): IStoppableService {
+            const watch = fs.watch(
                 path,
                 {
                     recursive: true,
@@ -47,6 +48,12 @@ export namespace FileSystem {
                     callback(this.clearPath(path, fileName));
                 }
             );
+
+            return {
+                async stop() {
+                    watch.close();
+                },
+            };
         }
         getName(path: string): string {
             return basename(path);

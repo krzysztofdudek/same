@@ -1,5 +1,0 @@
-{
-  "$schema": "http://json-schema.org/schema",
-  "title": "Feature phase description",
-  "type": "object"
-}

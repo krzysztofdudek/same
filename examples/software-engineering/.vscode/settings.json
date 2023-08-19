@@ -11,24 +11,13 @@
   "todo-tree.general.statusBar": "tags",
   "extensions.ignoreRecommendations": false,
   "c4.diagram.plantuml.enabled": true,
-  "cSpell.words": ["enduml", "plantuml", "puml", "startuml", "startsalt", "endsalt", "startgantt", "endgantt", "startmindmap", "endmindmap", "startwbs", "endwbs", "startjson", "endjson", "startyaml", "endyaml", "breakpage"],
+  "cSpell.words": ["enduml", "plantuml", "puml", "startuml", "startsalt", "endsalt", "startgantt", "endgantt", "startmindmap", "endmindmap", "startwbs", "endwbs", "startjson", "endjson", "startyaml", "endyaml", "breakpage", "structurizr"],
   "yaml.schemas": {
-      "meta/manifest.json": "manifest.yaml",
-      "meta/feature.json": [
-        "feature.yaml",
-        "*.feature.yaml"
-      ],
-      "meta/feature-phase.json": [
-        "feature-phase.yaml",
-        "*.feature-phase.yaml"
-      ],
-      "meta/component.json": [
-        "component.yaml",
-        "*.component.yaml"
-      ],
-      "meta/component-version.json": [
-        "component-version.yaml",
-        "*.component-version.yaml"
-      ]
+    "meta-model/manifest.json": "manifest.yaml",
+    "meta-model/feature.json": ["feature.yaml", "*.feature.yaml"],
+    "meta-model/feature-phase.json": ["feature-phase.yaml", "*.feature-phase.yaml"],
+    "meta-model/component.json": ["component.yaml", "*.component.yaml"],
+    "meta-model/component-version.json": ["component-version.yaml", "*.component-version.yaml"],
+    "meta-model/user-story.json": ["user-story.yaml", "*.user-story.yaml"]
   }
 }
