@@ -1,10 +1,10 @@
 import { CancellationToken } from "../infrastructure/cancellationToken.js";
 import { asyncForeach } from "../infrastructure/asyncForeach.js";
-import { Awaiter } from "../infrastructure/awaiter";
+import { Awaiter } from "../infrastructure/awaiter.js";
 import { FileSystem } from "../infrastructure/file-system.js";
 import { ObjectType, parseObject, stringifyObject } from "../infrastructure/functions/parseObject.js";
 import { ILifeTimeService, IStartableService, IStoppableService } from "../infrastructure/lifetimeServices.js";
-import { Logger } from "../infrastructure/logger";
+import { Logger } from "../infrastructure/logger.js";
 import { ServiceProvider } from "../infrastructure/service-provider.js";
 
 export namespace Model {
@@ -17,6 +17,9 @@ export namespace Model {
     export const iOptionsServiceKey = "Model.IOptions";
     export const iDelayedInvocationManagerServiceKey = "Model.IDelayedInvocationManager";
     export const iRepositoryServiceKey = "Model.IRepository";
+    export const iManifestFile = "Model.IManifestFile";
+    export const iMetaModel = "Model.IMetaModel";
+    export const iModel = "Model.IModel";
 
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
         serviceProvider.registerSingleton(
@@ -47,10 +50,46 @@ export namespace Model {
             iRepositoryServiceKey,
             () =>
                 new Repository(
+                    serviceProvider.resolve(iManifestFile),
+                    serviceProvider.resolve(iMetaModel),
+                    serviceProvider.resolve(iModel)
+                )
+        );
+
+        serviceProvider.registerSingleton(
+            iManifestFile,
+            () =>
+                new ManifestFile(
                     serviceProvider.resolve(iOptionsServiceKey),
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
-                    serviceProvider.resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey),
+                    serviceProvider
+                        .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
+                        .create("Model.ManifestFile")
+                )
+        );
+
+        serviceProvider.registerSingleton(
+            iMetaModel,
+            () =>
+                new MetaModel(
+                    serviceProvider.resolve(iOptionsServiceKey),
+                    serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
+                    serviceProvider
+                        .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
+                        .create("Model.MetaModel"),
                     serviceProvider.resolve(iDelayedInvocationManagerServiceKey)
+                )
+        );
+
+        serviceProvider.registerSingleton(
+            iModel,
+            () =>
+                new Model(
+                    serviceProvider.resolve(iOptionsServiceKey),
+                    serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
+                    serviceProvider
+                        .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
+                        .create("Model.Model")
                 )
         );
     }
@@ -65,60 +104,92 @@ export namespace Model {
         extensions: { [key: string]: unknown };
     }
 
-    interface IRepository extends ILifeTimeService {
-        manifestFile: IManifestFile;
-        metaModel: IMetaModel;
-        vsCode: IVsCode;
-        source: ISource;
+    interface ISynchronizable {
+        synchronize(cancellationToken?: CancellationToken | undefined): Promise<void>;
     }
 
-    interface IManifestFile extends IStartableService {
+    export interface IRepository extends ISynchronizable, ILifeTimeService {
+        manifestFile: IManifestFile;
+        metaModel: IMetaModel;
+        model: IModel;
+    }
+
+    export interface IManifestFile extends ISynchronizable, IStartableService {
         getManifest(): IManifest;
     }
 
-    interface IManifest {
+    export interface IManifest {
         projectName: string;
     }
 
-    interface IMetaModel extends ILifeTimeService {
+    export interface IMetaModel extends ISynchronizable, ILifeTimeService {
         getItems(): IMetaModelItem[];
         registerOnItemChanged(callback: (metaModelItem: IMetaModelItem) => void): void;
     }
 
-    interface IMetaModelItem extends IExtendable {
+    export interface IMetaModelItem extends IExtendable {
         getName(): string;
         getJsonSchema(): unknown;
         getMarkdownTemplate(): string;
     }
 
-    interface IVsCode extends IStartableService {
-        extensions: unknown;
-        settings: unknown;
-        tasks: unknown;
+    export interface IModel extends ISynchronizable, IStartableService {
+        getAllItems(): IModelItem[];
+        registerOnFileChanged(callback: (modelItem: IModelItem) => void): void;
     }
 
-    interface ISource extends IStartableService {
-        getAllFiles(): ISourceFile[];
-        registerOnFileChanged(callback: (sourceFiles: ISourceFile) => void): void;
-    }
-
-    interface ISourceFile extends IExtendable {
+    export interface IModelItem extends IExtendable {
         file: IFile;
     }
 
-    interface IFile {
-        fileName: string;
-        filePath: string;
-        directoryName: string;
-        directoryPath: string;
-        extension: string;
+    export interface IFile {
+        getFileName(): string;
+        getExtension(): string;
+        getRelativeFilePath(): string;
+        getAbsoluteFilePath(): string;
+        getDirectoryName(): string;
+        getRelativeDirectoryPath(): string;
+        getAbsoluteDirectoryPath(): string;
 
         readText(): Promise<string>;
         readJson<T>(): Promise<T>;
         readYaml<T>(): Promise<T>;
     }
 
-    interface IDelayedInvocationManager {
+    class File implements IFile {
+        getFileName(): string {
+            throw new Error("Method not implemented.");
+        }
+        getExtension(): string {
+            throw new Error("Method not implemented.");
+        }
+        getRelativeFilePath(): string {
+            throw new Error("Method not implemented.");
+        }
+        getAbsoluteFilePath(): string {
+            throw new Error("Method not implemented.");
+        }
+        getDirectoryName(): string {
+            throw new Error("Method not implemented.");
+        }
+        getRelativeDirectoryPath(): string {
+            throw new Error("Method not implemented.");
+        }
+        getAbsoluteDirectoryPath(): string {
+            throw new Error("Method not implemented.");
+        }
+        readText(): Promise<string> {
+            throw new Error("Method not implemented.");
+        }
+        readJson<T>(): Promise<T> {
+            throw new Error("Method not implemented.");
+        }
+        readYaml<T>(): Promise<T> {
+            throw new Error("Method not implemented.");
+        }
+    }
+
+    export interface IDelayedInvocationManager {
         registerCategoryHandler(
             category: string,
             handler: (name: string, cancellationToken?: CancellationToken | undefined) => Promise<void>
@@ -193,34 +264,15 @@ export namespace Model {
         }
     }
 
-    class Repository implements IRepository {
-        manifestFile: IManifestFile;
-        metaModel: IMetaModel;
-        vsCode: IVsCode;
-        source: ISource;
+    export class Repository implements IRepository {
+        constructor(public manifestFile: IManifestFile, public metaModel: IMetaModel, public model: IModel) {}
 
-        constructor(
-            options: IOptions,
-            fileSystem: FileSystem.IFileSystem,
-            loggerFactory: Logger.ILoggerFactory,
-            delayedInvocationManager: IDelayedInvocationManager
-        ) {
-            this.manifestFile = new ManifestFile(options, fileSystem, loggerFactory.create("Model.ManifestFile"));
-            this.metaModel = new MetaModel(
-                options,
-                fileSystem,
-                loggerFactory.create("Model.MetaModel"),
-                delayedInvocationManager
-            );
-            this.vsCode = new VsCode(options, fileSystem);
-            this.source = new Source(options, fileSystem);
-        }
-
+        async synchronize(cancellationToken?: CancellationToken | undefined): Promise<void> {}
         async start(cancellationToken?: CancellationToken | undefined): Promise<void> {
             await this.manifestFile.start(cancellationToken);
             await this.metaModel.start(cancellationToken);
-            await this.vsCode.start(cancellationToken);
-            await this.source.start(cancellationToken);
+            await this.model.start(cancellationToken);
+            ("");
         }
         async stop(): Promise<void> {
             await this.metaModel.stop();
@@ -244,6 +296,7 @@ export namespace Model {
             return this.manifest;
         }
 
+        async synchronize(cancellationToken?: CancellationToken | undefined): Promise<void> {}
         async start(): Promise<void> {
             const filePath = this.fileSystem.clearPath(this.options.getRepositoryPath(), manifestFileName);
 
@@ -293,6 +346,7 @@ export namespace Model {
             private delayedInvocationManager: IDelayedInvocationManager
         ) {}
 
+        async synchronize(cancellationToken?: CancellationToken | undefined): Promise<void> {}
         async start(cancellationToken?: CancellationToken | undefined): Promise<void> {
             const directoryPath = this.fileSystem.clearPath(this.options.getRepositoryPath(), metaModelDirectoryName);
 
@@ -306,11 +360,13 @@ export namespace Model {
 
             this.items = [];
 
-            await asyncForeach(filesPaths, async (filePath) => {
-                await this.refreshItem(filePath);
-
-                cancellationToken?.throwIfCancelled();
-            });
+            await asyncForeach(
+                filesPaths,
+                async (filePath) => {
+                    await this.refreshItem(filePath);
+                },
+                cancellationToken
+            );
 
             this.fullyFetched = true;
 
@@ -382,29 +438,22 @@ export namespace Model {
         }
     }
 
-    class VsCode implements IVsCode {
-        constructor(private options: IOptions, private fileSystem: FileSystem.IFileSystem) {}
+    class Model implements IModel {
+        constructor(
+            private options: IOptions,
+            private fileSystem: FileSystem.IFileSystem,
+            private logger: Logger.ILogger
+        ) {}
 
-        extensions: unknown;
-        settings: unknown;
-        tasks: unknown;
-
-        start(cancellationToken?: CancellationToken | undefined): Promise<void> {
-            throw new Error("Method not implemented.");
-        }
-    }
-
-    class Source implements ISource {
-        constructor(private options: IOptions, private fileSystem: FileSystem.IFileSystem) {}
-
+        async synchronize(cancellationToken?: CancellationToken | undefined): Promise<void> {}
         start(cancellationToken?: CancellationToken | undefined): Promise<void> {
             throw new Error("Method not implemented.");
         }
 
-        getAllFiles(): ISourceFile[] {
+        getAllItems(): IModelItem[] {
             throw new Error("Method not implemented.");
         }
-        registerOnFileChanged(callback: (sourceFiles: ISourceFile) => void): void {
+        registerOnFileChanged(callback: (sourceFiles: IModelItem) => void): void {
             throw new Error("Method not implemented.");
         }
     }
