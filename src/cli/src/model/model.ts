@@ -8,11 +8,11 @@ import { Logger } from "../infrastructure/logger.js";
 import { ServiceProvider } from "../infrastructure/service-provider.js";
 
 export namespace Model {
-    const manifestFileName: string = "manifest.yaml";
-    const metaModelDirectoryName: string = "meta-model";
+    export const manifestFileName: string = "manifest.yaml";
+    export const metaModelDirectoryName: string = "meta-model";
 
-    const metaModelName: string = "meta-model";
-    const modelName: string = "model";
+    export const metaModeCategoryName: string = "meta-model";
+    export const modelCategoryName: string = "model";
 
     export const iOptionsServiceKey = "Model.IOptions";
     export const iDelayedInvocationManagerServiceKey = "Model.IDelayedInvocationManager";
@@ -267,19 +267,22 @@ export namespace Model {
     export class Repository implements IRepository {
         constructor(public manifestFile: IManifestFile, public metaModel: IMetaModel, public model: IModel) {}
 
-        async synchronize(cancellationToken?: CancellationToken | undefined): Promise<void> {}
+        async synchronize(cancellationToken?: CancellationToken | undefined): Promise<void> {
+            await this.manifestFile.synchronize(cancellationToken);
+            await this.metaModel.synchronize(cancellationToken);
+            await this.model.synchronize(cancellationToken);
+        }
         async start(cancellationToken?: CancellationToken | undefined): Promise<void> {
             await this.manifestFile.start(cancellationToken);
             await this.metaModel.start(cancellationToken);
             await this.model.start(cancellationToken);
-            ("");
         }
         async stop(): Promise<void> {
             await this.metaModel.stop();
         }
     }
 
-    class ManifestFile implements IManifestFile {
+    export class ManifestFile implements IManifestFile {
         private manifest: IManifest | null = null;
 
         constructor(
@@ -296,8 +299,7 @@ export namespace Model {
             return this.manifest;
         }
 
-        async synchronize(cancellationToken?: CancellationToken | undefined): Promise<void> {}
-        async start(): Promise<void> {
+        async synchronize(cancellationToken?: CancellationToken | undefined): Promise<void> {
             const filePath = this.fileSystem.clearPath(this.options.getRepositoryPath(), manifestFileName);
 
             if (this.manifest === null) {
@@ -326,9 +328,12 @@ export namespace Model {
                 this.logger.trace("Manifest file synchronized.");
             }
         }
+        async start(cancellationToken?: CancellationToken | undefined): Promise<void> {
+            await this.synchronize(cancellationToken);
+        }
     }
 
-    class MetaModel implements IMetaModel {
+    export class MetaModel implements IMetaModel {
         private onItemChangedCallbacks: ((metaModelItem: IMetaModelItem) => void)[] = [];
         private items: {
             name: string;
@@ -344,18 +349,19 @@ export namespace Model {
             private fileSystem: FileSystem.IFileSystem,
             private logger: Logger.ILogger,
             private delayedInvocationManager: IDelayedInvocationManager
-        ) {}
+        ) {
+            delayedInvocationManager.registerCategoryHandler(metaModeCategoryName, async (filePath) => {
+                const item = await this.refreshItem(filePath);
 
-        async synchronize(cancellationToken?: CancellationToken | undefined): Promise<void> {}
-        async start(cancellationToken?: CancellationToken | undefined): Promise<void> {
-            const directoryPath = this.fileSystem.clearPath(this.options.getRepositoryPath(), metaModelDirectoryName);
+                if (item)
+                    this.onItemChangedCallbacks.forEach((callback) => {
+                        callback(item);
+                    });
+            });
+        }
 
-            if (!(await this.fileSystem.checkIfExists(directoryPath))) {
-                this.fileSystem.createDirectory(directoryPath);
-
-                this.logger.trace("Created meta model directory.");
-            }
-
+        async synchronize(cancellationToken?: CancellationToken | undefined): Promise<void> {
+            const directoryPath = this.getDirectoryPath();
             const filesPaths = await this.fileSystem.getFilesRecursively(directoryPath);
 
             this.items = [];
@@ -367,12 +373,30 @@ export namespace Model {
                 },
                 cancellationToken
             );
+        }
+        async start(cancellationToken?: CancellationToken | undefined): Promise<void> {
+            if (this.watchService) {
+                throw new Error("Meta model has been already started.");
+            }
+
+            const directoryPath = this.getDirectoryPath();
+
+            if (!(await this.fileSystem.checkIfExists(directoryPath))) {
+                this.fileSystem.createDirectory(directoryPath);
+
+                this.logger.trace("Created meta model directory.");
+            }
+
+            await this.synchronize(cancellationToken);
 
             this.fullyFetched = true;
 
             this.watchService = this.fileSystem.watchRecursive(directoryPath, async (filePath) => {
-                this.delayedInvocationManager.push(metaModelName, filePath);
+                this.delayedInvocationManager.push(metaModeCategoryName, filePath);
             });
+        }
+        private getDirectoryPath() {
+            return this.fileSystem.clearPath(this.options.getRepositoryPath(), metaModelDirectoryName);
         }
 
         async stop(): Promise<void> {
@@ -403,7 +427,7 @@ export namespace Model {
             this.onItemChangedCallbacks.push(callback);
         }
 
-        private async refreshItem(filePath: string) {
+        private async refreshItem(filePath: string): Promise<IMetaModelItem | null> {
             const fileName = this.fileSystem.getName(filePath);
             const name = fileName.split(".")[0];
 
@@ -412,7 +436,7 @@ export namespace Model {
             if (!(await this.fileSystem.checkIfExists(filePath))) {
                 this.items.splice(itemIndex, 0);
 
-                return;
+                return null;
             }
 
             let item = this.items[itemIndex];
@@ -435,6 +459,19 @@ export namespace Model {
                 item.jsonSchema = jsonSchema ?? item.jsonSchema;
                 item.markdownTemplate = markdownTemplate ?? item.markdownTemplate;
             }
+
+            return {
+                getName() {
+                    return item.name;
+                },
+                getJsonSchema() {
+                    return item.jsonSchema;
+                },
+                getMarkdownTemplate() {
+                    return item.markdownTemplate || "";
+                },
+                extensions: {},
+            };
         }
     }
 
