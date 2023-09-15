@@ -1,3 +1,4 @@
+import { create } from "domain";
 import { Build } from "../../core/build.js";
 import { handleAllMatches, matchAll } from "../../core/regExp.js";
 import { FileSystem } from "../../infrastructure/file-system.js";
@@ -6,6 +7,7 @@ import { Publish } from "../../publish/publish.js";
 import { MarkdownBuild } from "../markdown.js";
 
 const regExp = /\[([^\]]+)\]\(([^)#]+)(#?)([\w\d\-]*)\)/g;
+const headersRegExp = /^(\s*)(#+)\s*([^\n]+)(\n)^/gm;
 const remoteResourceRegExp = /\w+:\/\//;
 
 export namespace Link {
@@ -22,12 +24,23 @@ export namespace Link {
         MarkdownBuild.registerPostProcessor(
             serviceProvider,
             () =>
-                new PostProcessor(
+                new LinkPostProcessor(
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
                     serviceProvider.resolve(Build.iOptionsServiceKey),
                     serviceProvider.resolve(Publish.iOptionsServiceKey)
                 )
         );
+
+        MarkdownBuild.registerPostProcessor(serviceProvider, () => new HeaderPostProcessor());
+    }
+
+    function createAnchor(content: string): string {
+        const words = matchAll(content, /(\w+)/g).map((x) => x[1]);
+
+        return words
+            .map((y) => y.toLowerCase())
+            .filter((x) => x.length !== 0)
+            .join("-");
     }
 
     export class FileAnalyzer implements Build.IFileAnalyzer {
@@ -87,11 +100,7 @@ export namespace Link {
 
                 const fileContent = await this.fileSystem.readFile(filePath);
 
-                const headerMatches = matchAll(fileContent, /\n\s*#+\s*([^\n]+)\n/g).map((x) => {
-                    const words = matchAll(x[1], /(\w+)/g).map((x) => x[1]);
-
-                    return words.map((y) => y.toLowerCase()).join("-");
-                });
+                const headerMatches = matchAll(fileContent, headersRegExp).map((x) => createAnchor(x[3]));
 
                 if (headerMatches.findIndex((x) => x === anchor) === -1) {
                     analysisResults.push(
@@ -109,7 +118,36 @@ export namespace Link {
         }
     }
 
-    export class PostProcessor implements MarkdownBuild.IPostProcessor {
+    export class HeaderPostProcessor implements MarkdownBuild.IPostProcessor {
+        async execute(chunks: string[], _context: Build.FileBuildContext): Promise<void> {
+            for (let i = 0; i < chunks.length; i++) {
+                let chunk = chunks[i];
+                const matches = matchAll(chunk, headersRegExp);
+                let indexDiff = 0;
+
+                for (let j = 0; j < matches.length; j++) {
+                    const match = matches[j];
+                    const startIndex = match.index! + indexDiff;
+                    const endIndex = startIndex + match[0].length;
+                    const prefix = match[1];
+                    const headerSize = match[2].length;
+                    const content = match[3];
+                    const postfix = match[4];
+
+                    const anchor = createAnchor(content);
+                    const render = `${prefix}<h${headerSize} id="${anchor}">${content}<a href="#${anchor}" style="vertical-align: super; font-size: 14px">📎</a></h${headerSize}>${postfix}`;
+
+                    indexDiff = indexDiff - match[0].length + render.length;
+
+                    chunk = `${chunk.substring(0, startIndex)}${render}${chunk.substring(endIndex)}`;
+                }
+
+                chunks[i] = chunk;
+            }
+        }
+    }
+
+    export class LinkPostProcessor implements MarkdownBuild.IPostProcessor {
         public constructor(
             private fileSystem: FileSystem.IFileSystem,
             private buildOptions: Build.IOptions,
