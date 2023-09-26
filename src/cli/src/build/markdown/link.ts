@@ -6,7 +6,7 @@ import { ServiceProvider } from "../../infrastructure/service-provider.js";
 import { Publish } from "../../publish/publish.js";
 import { MarkdownBuild } from "../markdown.js";
 
-const regExp = /\[([^\]]+)\]\(([^)#]+)(#?)([\w\d\-]*)\)/g;
+const regExp = /\[([^\]]+)\]\(([^)#]+)(#?)([\w\d\-\%\+]*)\)/g;
 const headersRegExp = /^(\s*)(#+)\s*([^\n]+)(\n)^/gm;
 const remoteResourceRegExp = /\w+:\/\//;
 

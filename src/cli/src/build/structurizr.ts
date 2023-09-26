@@ -4,6 +4,7 @@ import { Logger } from "../infrastructure/logger.js";
 import { ServiceProvider } from "../infrastructure/service-provider.js";
 import { PlantUml } from "../tools/plant-uml.js";
 import { Structurizr } from "../tools/structurizr.js";
+import { PlantUmlBuild } from "./plant-uml.js";
 
 export namespace StructurizrBuild {
     export function register(serviceProvider: ServiceProvider.IServiceProvider) {
@@ -22,7 +23,8 @@ export namespace StructurizrBuild {
                     serviceProvider.resolve(PlantUml.iServerServiceKey),
                     serviceProvider
                         .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
-                        .create("StructurizrBuild.FileBuilder")
+                        .create("StructurizrBuild.FileBuilder"),
+                    serviceProvider.resolve(PlantUmlBuild.linkTransformerServiceKey)
                 )
         );
     }
@@ -63,7 +65,8 @@ export namespace StructurizrBuild {
             private buildOptions: Build.IOptions,
             private fileSystem: FileSystem.IFileSystem,
             private plantUmlServer: PlantUml.IServer,
-            private logger: Logger.ILogger
+            private logger: Logger.ILogger,
+            private linkTransformer: PlantUmlBuild.LinkTransformer
         ) {}
 
         async build(context: Build.FileBuildContext): Promise<void> {
@@ -85,7 +88,9 @@ export namespace StructurizrBuild {
                 const match = this.fileSystem.getName(filePath).match(/structurizr-(.*)\.puml/);
                 const diagramName = match![1];
 
-                const fileContent = await this.fileSystem.readFile(filePath);
+                let fileContent = await this.fileSystem.readFile(filePath);
+
+                fileContent = await this.linkTransformer.transformLinks(context, fileContent);
 
                 this.logger.debug(`Rendering diagram: ${diagramName}`);
 
