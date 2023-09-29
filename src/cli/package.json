@@ -1,6 +1,6 @@
 {
     "name": "same-cli",
-    "version": "1.0.0-alpha.23",
+    "version": "1.0.0-alpha.24",
     "description": "Software Architecture Modeling Environment CLI",
     "main": "dist/index.js",
     "type": "module",

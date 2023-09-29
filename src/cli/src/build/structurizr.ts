@@ -1,5 +1,6 @@
 import { Build } from "../core/build.js";
 import { matchAll } from "../core/regExp.js";
+import { Awaiter } from "../infrastructure/awaiter.js";
 import { FileSystem } from "../infrastructure/file-system.js";
 import { Logger } from "../infrastructure/logger.js";
 import { ServiceProvider } from "../infrastructure/service-provider.js";
@@ -31,7 +32,8 @@ export namespace StructurizrBuild {
                     serviceProvider
                         .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
                         .create("StructurizrBuild.FileBuilder"),
-                    serviceProvider.resolve(PlantUmlBuild.linkTransformerServiceKey)
+                    serviceProvider.resolve(PlantUmlBuild.linkTransformerServiceKey),
+                    serviceProvider.resolve(Awaiter.iAwaiterServiceKey)
                 )
         );
     }
@@ -85,11 +87,14 @@ export namespace StructurizrBuild {
             private fileSystem: FileSystem.IFileSystem,
             private plantUmlServer: PlantUml.IServer,
             private logger: Logger.ILogger,
-            private linkTransformer: PlantUmlBuild.LinkTransformer
+            private linkTransformer: PlantUmlBuild.LinkTransformer,
+            private awaiter: Awaiter.IAwaiter
         ) {}
 
         async build(context: Build.FileBuildContext): Promise<void> {
-            if (context.path.endsWith(".extension.dsl")) {
+            let dslFileContent = await this.fileSystem.readFile(context.path);
+
+            if (dslFileContent.startsWith("//ignore")) {
                 const dslFilePath = this.fileSystem.clearPath(
                     this.buildOptions.outputDirectoryPath,
                     context.relativePath
@@ -111,9 +116,9 @@ export namespace StructurizrBuild {
 
             this.logger.trace("Rendering PlantUML diagrams with Structurizr CLI");
 
-            let dslFileContent = await this.fileSystem.readFile(context.path);
             dslFileContent = this.transformTemplates(dslFileContent);
             const dslFilePath = this.fileSystem.clearPath(this.buildOptions.outputDirectoryPath, context.relativePath);
+            await this.fileSystem.createDirectory(this.fileSystem.getDirectory(dslFilePath));
             await this.fileSystem.createOrOverwriteFile(dslFilePath, dslFileContent);
 
             await this.structurizrTool.generateDiagrams(dslFilePath, outputDirectoryPath);
@@ -131,7 +136,19 @@ export namespace StructurizrBuild {
 
                 this.logger.debug(`Rendering diagram: ${diagramName}`);
 
-                const svg = await this.plantUmlServer.getSvg(fileContent);
+                let svg: string = "";
+
+                while (true) {
+                    try {
+                        svg = await this.plantUmlServer.getSvg(fileContent);
+
+                        break;
+                    } catch (error) {
+                        this.logger.warn(`While rendering ${diagramName} error occur: ${error}`);
+
+                        await this.awaiter.wait(200);
+                    }
+                }
 
                 const outputFilePath = this.fileSystem.clearPath(outputDirectoryPath, `${diagramName}.svg`);
 
