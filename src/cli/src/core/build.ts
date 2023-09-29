@@ -548,34 +548,40 @@ export namespace Build {
 
             for (let i = 0; i < fileEntry.file.dependencies.length; i++) {
                 const dependency = fileEntry.file.dependencies[i];
-                const dependencyFileEntry = this.fileEntries.find((x) => x.file.path === dependency);
+                const dependencyFileEntries = this.fileEntries.filter((x) => x.file.path.startsWith(dependency));
 
-                if (!dependencyFileEntry) {
-                    continue;
+                for (let i = 0; i < dependencyFileEntries.length; i++) {
+                    const dependencyFileEntry = dependencyFileEntries[i];
+
+                    if (
+                        dependencyStack.findIndex(
+                            (x) => x.parent === fileEntry.file.path && x.child === dependencyFileEntry.file.path
+                        ) !== -1
+                    ) {
+                        this.logger.error(
+                            `Detected dependency loop for "${fileEntry.file.compactPath}". Build stopped.`
+                        );
+
+                        return false;
+                    }
+
+                    const newEntry = { parent: fileEntry.file.path, child: dependency };
+
+                    if (
+                        localDependencies.findIndex(
+                            (x) => x.parent === newEntry.parent && x.child == newEntry.child
+                        ) !== -1
+                    ) {
+                        continue;
+                    }
+
+                    dependencyStack.push(newEntry);
+                    localDependencies.push(newEntry);
+
+                    const result = await this.buildFile(dependencyFileEntry, outputType, dependencyStack);
+
+                    if (!result) return false;
                 }
-
-                if (
-                    dependencyStack.findIndex((x) => x.parent === fileEntry.file.path && x.child === dependency) !== -1
-                ) {
-                    this.logger.error(`Detected dependency loop for "${fileEntry.file.compactPath}". Build stopped.`);
-
-                    return false;
-                }
-
-                const newEntry = { parent: fileEntry.file.path, child: dependency };
-
-                if (
-                    localDependencies.findIndex((x) => x.parent === newEntry.parent && x.child == newEntry.child) !== -1
-                ) {
-                    continue;
-                }
-
-                dependencyStack.push(newEntry);
-                localDependencies.push(newEntry);
-
-                const result = await this.buildFile(dependencyFileEntry, outputType, dependencyStack);
-
-                if (!result) return false;
             }
 
             try {

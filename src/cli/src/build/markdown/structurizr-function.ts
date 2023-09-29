@@ -77,7 +77,7 @@ export namespace StructurizrFunction {
                 this.fileSystem
                     .getDirectory(executionContext.filePath)
                     .substring(this.buildOptions.sourceDirectoryPath.length + 1),
-                executionContext.parameters[0],
+                executionContext.parameters[0] + "_processed",
                 `${executionContext.parameters[1]}.svg`
             );
 
