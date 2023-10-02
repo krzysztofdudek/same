@@ -126,19 +126,20 @@ export namespace StructurizrBuild {
             const resultFiles = await this.fileSystem.getFilesRecursively(outputDirectoryPath);
 
             const promises: Promise<void>[] = [];
-            let anyPromiseRejected: boolean = false;
+            let anyRejected: boolean = false;
+
             for (let i = 0; i < resultFiles.length; i++) {
+                const filePath = resultFiles[i];
+                const match = this.fileSystem.getName(filePath).match(/structurizr-(.*)\.puml/);
+                const diagramName = match![1];
+
+                this.logger.debug(`Rendering diagram: ${diagramName}`);
+
                 const promise = new Promise<void>(async (resolve, reject) => {
-                    const filePath = resultFiles[i];
-                    const match = this.fileSystem.getName(filePath).match(/structurizr-(.*)\.puml/);
-                    const diagramName = match![1];
-
-                    this.logger.debug(`Rendering diagram: ${diagramName}`);
-
                     try {
                         let fileContent = await this.fileSystem.readFile(filePath);
 
-                        fileContent = await this.linkTransformer.transformLinks(context, fileContent);
+                        fileContent = this.linkTransformer.transformLinks(context, fileContent);
 
                         let svg: string = "";
 
@@ -158,17 +159,19 @@ export namespace StructurizrBuild {
 
                         const outputFilePath = this.fileSystem.clearPath(outputDirectoryPath, `${diagramName}.svg`);
 
-                        await this.fileSystem.createOrOverwriteFile(outputFilePath, svg);
                         await this.fileSystem.delete(filePath);
+                        await this.fileSystem.createOrOverwriteFile(outputFilePath, svg);
+
+                        this.logger.debug(`Rendered diagram ${diagramName} into the file: ${outputFilePath}`);
+
+                        resolve();
                     } catch (error) {
                         this.logger.error(`While saving diagram ${diagramName} error occur: ${error}`);
 
-                        anyPromiseRejected = true;
+                        anyRejected = true;
 
                         reject();
                     }
-
-                    resolve();
                 });
 
                 promises.push(promise);
@@ -176,8 +179,8 @@ export namespace StructurizrBuild {
 
             await Promise.all(promises);
 
-            if (anyPromiseRejected) {
-                throw new Error("Error occur when processing PlantUML result files.");
+            if (anyRejected) {
+                throw new Error(`Error occur when processing diagram`);
             }
         }
 

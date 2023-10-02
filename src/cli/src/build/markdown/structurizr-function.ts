@@ -3,6 +3,7 @@ import { ServiceProvider } from "../../infrastructure/service-provider.js";
 import { FileSystem } from "../../infrastructure/file-system.js";
 import { MarkdownBuild } from "../markdown.js";
 import { parameterDependencyIntrospector } from "./parameter-dependency-introspector.js";
+import { Logger } from "../../infrastructure/logger.js";
 
 const functionName = "structurizr";
 
@@ -19,7 +20,10 @@ export namespace StructurizrFunction {
             () =>
                 new FunctionExecutor(
                     serviceProvider.resolve(FileSystem.iFileSystemServiceKey),
-                    serviceProvider.resolve(Build.iOptionsServiceKey)
+                    serviceProvider.resolve(Build.iOptionsServiceKey),
+                    serviceProvider
+                        .resolve<Logger.ILoggerFactory>(Logger.iLoggerFactoryServiceKey)
+                        .create("StructurizrFunction.FunctionExecutor")
                 )
         );
     }
@@ -69,7 +73,11 @@ export namespace StructurizrFunction {
     export class FunctionExecutor implements MarkdownBuild.IFunctionExecutor {
         functionName: string = functionName;
 
-        public constructor(private fileSystem: FileSystem.IFileSystem, private buildOptions: Build.IOptions) {}
+        public constructor(
+            private fileSystem: FileSystem.IFileSystem,
+            private buildOptions: Build.IOptions,
+            private logger: Logger.ILogger
+        ) {}
 
         async execute(executionContext: MarkdownBuild.FunctionExecutionContext): Promise<string> {
             const filePath = this.fileSystem.clearPath(
@@ -80,6 +88,8 @@ export namespace StructurizrFunction {
                 executionContext.parameters[0] + "_processed",
                 `${executionContext.parameters[1]}.svg`
             );
+
+            this.logger.debug(`Including '${filePath}' into ${executionContext.filePath}`);
 
             const fileContent = await this.fileSystem.readFile(filePath);
 

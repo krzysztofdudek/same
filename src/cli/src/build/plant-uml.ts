@@ -71,7 +71,7 @@ export namespace PlantUmlBuild {
 
                 this.logger.debug(`Rendering diagram: ${i + 1}`);
 
-                fragment = await this.linkTransformer.transformLinks(context, fragment);
+                fragment = this.linkTransformer.transformLinks(context, fragment);
 
                 const svg = await this.plantUmlServer.getSvg(fragment);
 
@@ -92,7 +92,7 @@ export namespace PlantUmlBuild {
             private publishOptions: Publish.IOptions
         ) {}
 
-        async transformLinks(context: Build.FileBuildContext, fragment: string): Promise<string> {
+        transformLinks(context: Build.FileBuildContext, fragment: string): string {
             let newFragment: string = fragment;
             const linksMatches = matchAll(fragment, linkRegexp);
 
