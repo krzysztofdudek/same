@@ -125,36 +125,44 @@ export namespace StructurizrBuild {
 
             const resultFiles = await this.fileSystem.getFilesRecursively(outputDirectoryPath);
 
+            const promises: Promise<void>[] = [];
             for (let i = 0; i < resultFiles.length; i++) {
-                const filePath = resultFiles[i];
-                const match = this.fileSystem.getName(filePath).match(/structurizr-(.*)\.puml/);
-                const diagramName = match![1];
+                promises.push(
+                    new Promise(async (resolve) => {
+                        const filePath = resultFiles[i];
+                        const match = this.fileSystem.getName(filePath).match(/structurizr-(.*)\.puml/);
+                        const diagramName = match![1];
 
-                let fileContent = await this.fileSystem.readFile(filePath);
+                        let fileContent = await this.fileSystem.readFile(filePath);
 
-                fileContent = await this.linkTransformer.transformLinks(context, fileContent);
+                        fileContent = await this.linkTransformer.transformLinks(context, fileContent);
 
-                this.logger.debug(`Rendering diagram: ${diagramName}`);
+                        this.logger.debug(`Rendering diagram: ${diagramName}`);
 
-                let svg: string = "";
+                        let svg: string = "";
 
-                while (true) {
-                    try {
-                        svg = await this.plantUmlServer.getSvg(fileContent);
+                        while (true) {
+                            try {
+                                svg = await this.plantUmlServer.getSvg(fileContent);
 
-                        break;
-                    } catch (error) {
-                        this.logger.warn(`While rendering ${diagramName} error occur: ${error}`);
+                                break;
+                            } catch (error) {
+                                this.logger.warn(`While rendering ${diagramName} error occur: ${error}`);
 
-                        await this.awaiter.wait(200);
-                    }
-                }
+                                await this.awaiter.wait(200);
+                            }
+                        }
 
-                const outputFilePath = this.fileSystem.clearPath(outputDirectoryPath, `${diagramName}.svg`);
+                        const outputFilePath = this.fileSystem.clearPath(outputDirectoryPath, `${diagramName}.svg`);
 
-                await this.fileSystem.createOrOverwriteFile(outputFilePath, svg);
-                await this.fileSystem.delete(filePath);
+                        await this.fileSystem.createOrOverwriteFile(outputFilePath, svg);
+                        await this.fileSystem.delete(filePath);
+
+                        resolve();
+                    })
+                );
             }
+            await Promise.all(promises);
         }
 
         transformTemplates(fileContent: string): string {
