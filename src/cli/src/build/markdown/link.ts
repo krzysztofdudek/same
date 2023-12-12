@@ -182,7 +182,7 @@ export namespace Link {
                         absoluteFilePath.substring(
                             this.buildOptions.sourceDirectoryPath.length + 1,
                             absoluteFilePath.length - fileExtension.length
-                        ) + "html";
+                        ) + (fileExtension === "md" ? "html" : fileExtension);
 
                     const linkRender = `[${title}](${this.publishOptions.createBaseUrl()}/${urlFragment}${
                         anchor !== null ? `#${anchor}` : ""
