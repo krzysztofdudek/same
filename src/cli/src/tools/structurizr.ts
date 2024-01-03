@@ -53,7 +53,7 @@ export namespace Structurizr {
             const latestVersionDescriptor = await this.gitHub.getLatestRelease(
                 "structurizr",
                 "cli",
-                /structurizr\-cli\-.+\.zip/
+                /structurizr\-cli(\-.+)?\.zip/
             );
 
             const currentVersion = await this.toolsetVersions.getToolVersion(toolName);
